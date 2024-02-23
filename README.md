@@ -105,6 +105,24 @@ pack_take_while<Filter, Pack>
 // Take elements from Pack until Filter matches
 pack_take_until<Filter, Pack>
 
+// Drop the last I elements of Pack
+pack_drop_last<I, Pack>
+
+// Drop elements from the end of Pack while Filter matches
+pack_drop_last_while<Filter, Pack>
+
+// Drop elements from the end of Pack until Filter matches
+pack_drop_last_until<Filter, Pack>
+
+// Take the last I elements of Pack
+pack_take_last<I, Pack>
+
+// Take elements from the end of Pack while Filter matches
+pack_take_last_while<Filter, Pack>
+
+// Take elements from the end of Pack until Filter matches
+pack_take_last_until<Filter, Pack>
+
 // Concat all types in all Packs to single pack
 pack_concat<Packs...>
 
