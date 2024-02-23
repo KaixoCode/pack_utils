@@ -49,6 +49,17 @@ namespace kaixo {
             constexpr static bool value = !static_cast<bool>(Filter<Ty>::value);
         };
     };
+    
+    // ------------------------------------------------
+
+    // Reverse the Sorter
+    template<template<class, class> class Sorter>
+    struct sorter_reverse {
+        template<class A, class B>
+        struct type {
+            constexpr static bool value = !Sorter<A, B>::value;
+        };
+    };
 
     // ------------------------------------------------
 
@@ -982,17 +993,17 @@ namespace kaixo {
         struct merge_sort_merge;
 
         template<template<class, class> class Sorter, class A, class ...As, class B, class ...Bs>
-            requires (!Sorter<A, B>::value)
+            requires (Sorter<A, B>::value)
         struct merge_sort_merge<Sorter, pack<A, As...>, pack<B, Bs...>> {
             using _recurse = typename merge_sort_merge<Sorter, pack<As...>, pack<B, Bs...>>::type;
-            using type = typename pack_append<A, _recurse>::type;
+            using type = typename pack_prepend<A, _recurse>::type;
         };
 
         template<template<class, class> class Sorter, class A, class ...As, class B, class ...Bs>
-            requires (Sorter<A, B>::value)
+            requires (!Sorter<A, B>::value)
         struct merge_sort_merge<Sorter, pack<A, As...>, pack<B, Bs...>> {
             using _recurse = typename merge_sort_merge<Sorter, pack<A, As...>, pack<Bs...>>::type;
-            using type = typename pack_append<B, _recurse>::type;
+            using type = typename pack_prepend<B, _recurse>::type;
         };
 
         template<template<class, class> class Sorter, class ...As>
