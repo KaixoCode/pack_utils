@@ -433,6 +433,42 @@ static_assert(std::same_as<pack_take_until_t<std::is_integral, pack<int>>, pack<
 static_assert(std::same_as<pack_take_until_t<std::is_integral, pack<double>>, pack<double>>);
 static_assert(std::same_as<pack_take_until_t<std::is_integral, pack<>>, pack<>>);
 
+static_assert(std::same_as<pack_drop_last_t<0, pack<int, double>>, pack<int, double>>);
+static_assert(std::same_as<pack_drop_last_t<1, pack<int, double>>, pack<int>>);
+static_assert(std::same_as<pack_drop_last_t<2, pack<int, double>>, pack<>>);
+static_assert(std::same_as<pack_drop_last_t<1, pack<int>>, pack<>>);
+static_assert(std::same_as<pack_drop_last_t<0, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_drop_last_while_t<std::is_integral, pack<int, double>>, pack<int, double>>);
+static_assert(std::same_as<pack_drop_last_while_t<std::is_integral, pack<double, int>>, pack<double>>);
+static_assert(std::same_as<pack_drop_last_while_t<std::is_integral, pack<int>>, pack<>>);
+static_assert(std::same_as<pack_drop_last_while_t<std::is_integral, pack<double>>, pack<double>>);
+static_assert(std::same_as<pack_drop_last_while_t<std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_drop_last_until_t<std::is_integral, pack<int, double>>, pack<int>>);
+static_assert(std::same_as<pack_drop_last_until_t<std::is_integral, pack<double, int>>, pack<double, int>>);
+static_assert(std::same_as<pack_drop_last_until_t<std::is_integral, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_drop_last_until_t<std::is_integral, pack<double>>, pack<>>);
+static_assert(std::same_as<pack_drop_last_until_t<std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_take_last_t<0, pack<int, double>>, pack<>>);
+static_assert(std::same_as<pack_take_last_t<1, pack<int, double>>, pack<double>>);
+static_assert(std::same_as<pack_take_last_t<2, pack<int, double>>, pack<int, double>>);
+static_assert(std::same_as<pack_take_last_t<1, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_take_last_t<0, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_take_last_while_t<std::is_integral, pack<int, double>>, pack<>>);
+static_assert(std::same_as<pack_take_last_while_t<std::is_integral, pack<double, int>>, pack<int>>);
+static_assert(std::same_as<pack_take_last_while_t<std::is_integral, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_take_last_while_t<std::is_integral, pack<double>>, pack<>>);
+static_assert(std::same_as<pack_take_last_while_t<std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_take_last_until_t<std::is_integral, pack<int, double>>, pack<double>>);
+static_assert(std::same_as<pack_take_last_until_t<std::is_integral, pack<double, int>>, pack<>>);
+static_assert(std::same_as<pack_take_last_until_t<std::is_integral, pack<int>>, pack<>>);
+static_assert(std::same_as<pack_take_last_until_t<std::is_integral, pack<double>>, pack<double>>);
+static_assert(std::same_as<pack_take_last_until_t<std::is_integral, pack<>>, pack<>>);
+
 static_assert(std::same_as<pack_concat_t<pack<>>, pack<>>);
 static_assert(std::same_as<pack_concat_t<pack<>, pack<>>, pack<>>);
 static_assert(std::same_as<pack_concat_t<pack<>, pack<>, pack<>>, pack<>>);
