@@ -323,6 +323,7 @@ static_assert(std::same_as<pack_transform_t<transform_to_int, pack<int>>, pack<i
 static_assert(std::same_as<pack_transform_t<transform_to_int, pack<float>>, pack<int>>);
 static_assert(std::same_as<pack_transform_t<transform_to_int, pack<float, int>>, pack<int, int>>);
 static_assert(std::same_as<pack_transform_t<transform_to_self, pack<float, int>>, pack<float, int>>);
+static_assert(std::same_as<pack_transform_t<conditional_transform<std::is_integral, transform_to_int>::type, pack<float, char>>, pack<float, int>>);
 
 static_assert(std::same_as<pack_append_t<char, pack<float, int>>, pack<float, int, char>>);
 static_assert(std::same_as<pack_append_t<char, pack<>>, pack<char>>);

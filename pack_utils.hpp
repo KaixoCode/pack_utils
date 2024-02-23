@@ -63,6 +63,30 @@ namespace kaixo {
 
     // ------------------------------------------------
 
+    // Only apply Transform if Filter matches
+    template<template<class> class Filter, template<class> class Transform>
+    struct conditional_transform {
+        template<class Ty>
+        struct _impl;
+
+        template<class Ty>
+            requires (Filter<Ty>::value)
+        struct _impl<Ty> {
+            using type = Transform<Ty>;
+        };
+
+        template<class Ty>
+            requires (!Filter<Ty>::value)
+        struct _impl<Ty> {
+            using type = Ty;
+        };
+
+        template<class Ty>
+        using type = typename _impl<Ty>::type;
+    };
+
+    // ------------------------------------------------
+
     template<class ...Tys>
     struct pack;
 
