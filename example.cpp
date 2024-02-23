@@ -1,13 +1,358 @@
+
+// ------------------------------------------------
+
 #include "pack_utils.hpp"
 
-int main() {
+// ------------------------------------------------
 
-	constexpr auto sum = [](auto ...values) { return (values + ...); };
-	constexpr auto even = [](auto value) { return value % 2 == 0; };
-	constexpr auto to_array = [](auto ...values) { return std::array{ values... }; };
+using namespace kaixo;
 
-	constexpr auto res = kaixo::to_pack<1, 3, 5, 7, 9>::for_each<sum>;
-	constexpr auto arr = kaixo::to_pack<1, 4, 5, 6, 8, 9>::filter<even>::for_each<to_array>;
+static_assert(pack_size_v<pack<double, int, float>> == 3);
+static_assert(pack_size_v<pack<double, int, int, int>> == 4);
+static_assert(pack_size_v<pack<>> == 0);
 
-	return 0;
-}
+static_assert(std::same_as<pack_element_t<0, pack<double, int, int, char>>, double>);
+static_assert(std::same_as<pack_element_t<1, pack<double, int, int, int>>, int>);
+static_assert(std::same_as<pack_element_t<3, pack<double, int, int, char>>, char>);
+static_assert(std::same_as<pack_element_t<0, pack<double>>, double>);
+
+static_assert(pack_contains_v<int, pack<double, int, float>>);
+static_assert(!pack_contains_v<char, pack<double, int, float>>);
+static_assert(!pack_contains_v<char, pack<>>);
+
+static_assert(pack_contains_all_v<pack<int, double>, pack<double, int, float>>);
+static_assert(!pack_contains_all_v<pack<int, char>, pack<double, int, float>>);
+static_assert(!pack_contains_all_v<pack<int, char>, pack<>>);
+static_assert(pack_contains_all_v<pack<>, pack<>>);
+
+static_assert(pack_contains_any_v<pack<int, char>, pack<double, int, float>>);
+static_assert(!pack_contains_any_v<pack<long, char>, pack<double, int, float>>);
+static_assert(!pack_contains_any_v<pack<long, char>, pack<>>);
+static_assert(!pack_contains_any_v<pack<>, pack<>>);
+
+static_assert(pack_find_v<std::is_integral, pack<long, char>>);
+static_assert(pack_find_v<std::is_integral, pack<float, char>>);
+static_assert(!pack_find_v<std::is_integral, pack<float, double>>);
+static_assert(!pack_find_v<std::is_integral, pack<>>);
+
+static_assert(pack_count_v<int, pack<double, int, float>> == 1);
+static_assert(pack_count_v<char, pack<double, int, float>> == 0);
+static_assert(pack_count_v<float, pack<float, int, float>> == 2);
+static_assert(pack_count_v<float, pack<>> == 0);
+
+static_assert(pack_count_all_v<pack<float>, pack<float, int, float>> == 2);
+static_assert(pack_count_all_v<pack<float, int>, pack<float, int, float>> == 3);
+static_assert(pack_count_all_v<pack<float, int>, pack<char, int, float>> == 2);
+static_assert(pack_count_all_v<pack<float, int>, pack<>> == 0);
+
+static_assert(pack_count_unique_v<pack<int, double>> == 2);
+static_assert(pack_count_unique_v<pack<int, double, int>> == 2);
+static_assert(pack_count_unique_v<pack<int, int, int>> == 1);
+static_assert(pack_count_unique_v<pack<>> == 0);
+
+static_assert(pack_count_filter_v<std::is_integral, pack<char, int, float>> == 2);
+static_assert(pack_count_filter_v<std::is_integral, pack<double, float>> == 0);
+static_assert(pack_count_filter_v<std::is_integral, pack<>> == 0);
+
+static_assert(pack_nth_index_of_v<int, 0, pack<double, int, float, int, long>> == 1);
+static_assert(pack_nth_index_of_v<int, 1, pack<double, int, float, int, long>> == 3);
+static_assert(pack_nth_index_of_v<int, 2, pack<double, int, float, int, long>> == npos);
+static_assert(pack_nth_index_of_v<int, 4, pack<int, int, int, int, int>> == 4);
+static_assert(pack_nth_index_of_v<char, 0, pack<double, int, float>> == npos);
+static_assert(pack_nth_index_of_v<char, 1, pack<double, int, float>> == npos);
+static_assert(pack_nth_index_of_v<char, 1, pack<>> == npos);
+
+static_assert(pack_nth_index_of_any_v<pack<int, float>, 0, pack<double, int, float, int, long>> == 1);
+static_assert(pack_nth_index_of_any_v<pack<int, double>, 1, pack<double, int, float, int, long>> == 1);
+static_assert(pack_nth_index_of_any_v<pack<int, float>, 2, pack<double, int, float, int, long>> == 3);
+static_assert(pack_nth_index_of_any_v<pack<int, float>, 3, pack<double, int, float, int, long>> == npos);
+static_assert(pack_nth_index_of_any_v<pack<int, float>, 4, pack<int, int, int, int, int>> == 4);
+static_assert(pack_nth_index_of_any_v<pack<char, long>, 0, pack<double, int, float>> == npos);
+static_assert(pack_nth_index_of_any_v<pack<char, long>, 1, pack<double, int, float>> == npos);
+static_assert(pack_nth_index_of_any_v<pack<char, long>, 1, pack<>> == npos);
+static_assert(pack_nth_index_of_any_v<pack<>, 0, pack<>> == npos);
+static_assert(pack_nth_index_of_any_v<pack<>, 0, pack<int, long, float>> == npos);
+static_assert(pack_nth_index_of_any_v<pack<>, 1, pack<int, long, float>> == npos);
+
+static_assert(pack_nth_index_filter_v<std::is_integral, 0, pack<double, int, float, int, long>> == 1);
+static_assert(pack_nth_index_filter_v<std::is_integral, 1, pack<double, int, float, int, long>> == 3);
+static_assert(pack_nth_index_filter_v<std::is_integral, 2, pack<double, int, float, int, long>> == 4);
+static_assert(pack_nth_index_filter_v<std::is_integral, 3, pack<double, int, float, int, long>> == npos);
+static_assert(pack_nth_index_filter_v<std::is_integral, 4, pack<int, int, int, int, int>> == 4);
+static_assert(pack_nth_index_filter_v<std::is_integral, 0, pack<double, int, float>> == 1);
+static_assert(pack_nth_index_filter_v<std::is_integral, 1, pack<double, int, float>> == npos);
+static_assert(pack_nth_index_filter_v<std::is_integral, 0, pack<>> == npos);
+static_assert(pack_nth_index_filter_v<std::is_integral, 1, pack<>> == npos);
+
+static_assert(pack_index_of_v<int, pack<double, int, float, int>> == 1);
+static_assert(pack_index_of_v<char, pack<double, int, float>> == npos);
+static_assert(pack_index_of_v<char, pack<>> == npos);
+
+static_assert(pack_index_of_any_v<pack<int, float>, pack<double, int, float, int>> == 1);
+static_assert(pack_index_of_any_v<pack<char, long>, pack<double, int, float>> == npos);
+static_assert(pack_index_of_any_v<pack<char>, pack<>> == npos);
+static_assert(pack_index_of_any_v<pack<>, pack<>> == npos);
+static_assert(pack_index_of_any_v<pack<>, pack<int, long, char>> == npos);
+
+static_assert(pack_index_filter_v<std::is_integral, pack<double, int, float, int>> == 1);
+static_assert(pack_index_filter_v<std::is_integral, pack<double, float>> == npos);
+static_assert(pack_index_filter_v<std::is_integral, pack<>> == npos);
+
+static_assert(pack_first_index_of_v<int, pack<double, int, float, int>> == 1);
+static_assert(pack_first_index_of_v<char, pack<double, int, float>> == npos);
+static_assert(pack_first_index_of_v<char, pack<>> == npos);
+
+static_assert(pack_first_index_of_any_v<pack<int, float>, pack<double, int, float, int>> == 1);
+static_assert(pack_first_index_of_any_v<pack<char, long>, pack<double, int, float>> == npos);
+static_assert(pack_first_index_of_any_v<pack<char>, pack<>> == npos);
+static_assert(pack_first_index_of_any_v<pack<>, pack<>> == npos);
+static_assert(pack_first_index_of_any_v<pack<>, pack<int, long, char>> == npos);
+
+static_assert(pack_first_index_filter_v<std::is_integral, pack<double, int, float, int>> == 1);
+static_assert(pack_first_index_filter_v<std::is_integral, pack<double, float>> == npos);
+static_assert(pack_first_index_filter_v<std::is_integral, pack<>> == npos);
+
+static_assert(pack_last_index_of_v<int, pack<double, int, float, int>> == 3);
+static_assert(pack_last_index_of_v<int, pack<double, int, float, char>> == 1);
+static_assert(pack_last_index_of_v<char, pack<double, int, float>> == npos);
+static_assert(pack_last_index_of_v<char, pack<>> == npos);
+
+static_assert(pack_last_index_of_any_v<pack<int, float>, pack<double, int, float, int>> == 3);
+static_assert(pack_last_index_of_any_v<pack<int, float>, pack<double, int, int, char>> == 2);
+static_assert(pack_last_index_of_any_v<pack<int, float>, pack<double, int, float, char>> == 2);
+static_assert(pack_last_index_of_any_v<pack<char, long>, pack<double, int, float>> == npos);
+static_assert(pack_last_index_of_any_v<pack<char>, pack<>> == npos);
+static_assert(pack_last_index_of_any_v<pack<>, pack<>> == npos);
+static_assert(pack_last_index_of_any_v<pack<>, pack<int, long, char>> == npos);
+
+static_assert(pack_last_index_filter_v<std::is_integral, pack<double, int, float, int>> == 3);
+static_assert(pack_last_index_filter_v<std::is_integral, pack<double, int, float, float>> == 1);
+static_assert(pack_last_index_filter_v<std::is_integral, pack<double, float>> == npos);
+static_assert(pack_last_index_filter_v<std::is_integral, pack<>> == npos);
+
+static_assert(std::same_as<pack_indices_of_t<int, pack<double, float, int, long, int>>, std::index_sequence<2, 4>>);
+static_assert(std::same_as<pack_indices_of_t<int, pack<int, long, int>>, std::index_sequence<0, 2>>);
+static_assert(std::same_as<pack_indices_of_t<char, pack<int, long, int>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_of_t<char, pack<>>, std::index_sequence<>>);
+
+static_assert(std::same_as<pack_indices_of_all_t<pack<int, long>, pack<double, float, int, long, int>>, std::index_sequence<2, 3, 4>>);
+static_assert(std::same_as<pack_indices_of_all_t<pack<int, long>, pack<int, long, int>>, std::index_sequence<0, 1, 2>>);
+static_assert(std::same_as<pack_indices_of_all_t<pack<char, float>, pack<int, long, int>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_of_all_t<pack<char, float>, pack<>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_of_all_t<pack<>, pack<>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_of_all_t<pack<>, pack<int>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_of_all_t<pack<>, pack<int, double, float>>, std::index_sequence<>>);
+
+static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<double, float, int, long, int>>, std::index_sequence<2, 3, 4>>);
+static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<int>>, std::index_sequence<0>>);
+static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<int, double, float>>, std::index_sequence<0>>);
+static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<double, float, int>>, std::index_sequence<2>>);
+static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<int, long, int>>, std::index_sequence<0, 1, 2>>);
+static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<float, double>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<>>, std::index_sequence<>>);
+
+static_assert(std::same_as<pack_first_indices_t<pack<int, double, int, float>>, std::index_sequence<0, 1, 3>>);
+static_assert(std::same_as<pack_first_indices_t<pack<int, double, char, float>>, std::index_sequence<0, 1, 2, 3>>);
+static_assert(std::same_as<pack_first_indices_t<pack<int, double, int, double>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_first_indices_t<pack<int, int, double, double>>, std::index_sequence<0, 2>>);
+static_assert(std::same_as<pack_first_indices_t<pack<int, int, int, int>>, std::index_sequence<0>>);
+static_assert(std::same_as<pack_first_indices_t<pack<>>, std::index_sequence<>>);
+
+static_assert(std::same_as<pack_at_indices_t<std::index_sequence<0>, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_at_indices_t<std::index_sequence<0>, pack<int, float>>, pack<int>>);
+static_assert(std::same_as<pack_at_indices_t<std::index_sequence<1>, pack<int, float>>, pack<float>>);
+static_assert(std::same_as<pack_at_indices_t<std::index_sequence<0, 1>, pack<int, float>>, pack<int, float>>);
+static_assert(std::same_as<pack_at_indices_t<std::index_sequence<0, 3>, pack<int, float, char, long>>, pack<int, long>>);
+static_assert(std::same_as<pack_at_indices_t<std::index_sequence<1, 3>, pack<int, float, char, long>>, pack<float, long>>);
+static_assert(std::same_as<pack_at_indices_t<std::index_sequence<1, 3, 1>, pack<int, float, char, long>>, pack<float, long, float>>);
+static_assert(std::same_as<pack_at_indices_t<std::index_sequence<>, pack<int, float, char, long>>, pack<>>);
+
+static_assert(std::same_as<pack_unique_t<pack<int, float, char, long>>, pack<int, float, char, long>>);
+static_assert(std::same_as<pack_unique_t<pack<int, float, int, long>>, pack<int, float, long>>);
+static_assert(std::same_as<pack_unique_t<pack<int, int, int, long>>, pack<int, long>>);
+static_assert(std::same_as<pack_unique_t<pack<long, int, int, long>>, pack<long, int>>);
+static_assert(std::same_as<pack_unique_t<pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_unique_t<pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_drop_t<0, pack<int, double>>, pack<int, double>>);
+static_assert(std::same_as<pack_drop_t<1, pack<int, double>>, pack<double>>);
+static_assert(std::same_as<pack_drop_t<2, pack<int, double>>, pack<>>);
+static_assert(std::same_as<pack_drop_t<1, pack<int>>, pack<>>);
+static_assert(std::same_as<pack_drop_t<0, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_drop_while_t<std::is_integral, pack<int, double>>, pack<double>>);
+static_assert(std::same_as<pack_drop_while_t<std::is_integral, pack<double, int>>, pack<double, int>>);
+static_assert(std::same_as<pack_drop_while_t<std::is_integral, pack<int>>, pack<>>);
+static_assert(std::same_as<pack_drop_while_t<std::is_integral, pack<double>>, pack<double>>);
+static_assert(std::same_as<pack_drop_while_t<std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_drop_until_t<std::is_integral, pack<int, double>>, pack<int, double>>);
+static_assert(std::same_as<pack_drop_until_t<std::is_integral, pack<double, int>>, pack<int>>);
+static_assert(std::same_as<pack_drop_until_t<std::is_integral, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_drop_until_t<std::is_integral, pack<double>>, pack<>>);
+static_assert(std::same_as<pack_drop_until_t<std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_take_t<0, pack<int, double>>, pack<>>);
+static_assert(std::same_as<pack_take_t<1, pack<int, double>>, pack<int>>);
+static_assert(std::same_as<pack_take_t<2, pack<int, double>>, pack<int, double>>);
+static_assert(std::same_as<pack_take_t<1, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_take_t<0, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_take_while_t<std::is_integral, pack<int, double>>, pack<int>>);
+static_assert(std::same_as<pack_take_while_t<std::is_integral, pack<double, int>>, pack<>>);
+static_assert(std::same_as<pack_take_while_t<std::is_integral, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_take_while_t<std::is_integral, pack<double>>, pack<>>);
+static_assert(std::same_as<pack_take_while_t<std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_take_until_t<std::is_integral, pack<int, double>>, pack<>>);
+static_assert(std::same_as<pack_take_until_t<std::is_integral, pack<double, int>>, pack<double>>);
+static_assert(std::same_as<pack_take_until_t<std::is_integral, pack<int>>, pack<>>);
+static_assert(std::same_as<pack_take_until_t<std::is_integral, pack<double>>, pack<double>>);
+static_assert(std::same_as<pack_take_until_t<std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_concat_t<pack<>>, pack<>>);
+static_assert(std::same_as<pack_concat_t<pack<>, pack<>>, pack<>>);
+static_assert(std::same_as<pack_concat_t<pack<>, pack<>, pack<>>, pack<>>);
+static_assert(std::same_as<pack_concat_t<pack<int>, pack<>, pack<>>, pack<int>>);
+static_assert(std::same_as<pack_concat_t<pack<>, pack<int>, pack<>>, pack<int>>);
+static_assert(std::same_as<pack_concat_t<pack<>, pack<>, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_concat_t<pack<int>, pack<char>, pack<>>, pack<int, char>>);
+static_assert(std::same_as<pack_concat_t<pack<int>, pack<>, pack<char>>, pack<int, char>>);
+static_assert(std::same_as<pack_concat_t<pack<>, pack<int>, pack<char>>, pack<int, char>>);
+static_assert(std::same_as<pack_concat_t<pack<int>, pack<long>, pack<char>>, pack<int, long, char>>);
+static_assert(std::same_as<pack_concat_t<pack<int, long>, pack<char>>, pack<int, long, char>>);
+static_assert(std::same_as<pack_concat_t<pack<int>, pack<long, char>>, pack<int, long, char>>);
+
+static_assert(std::same_as<pack_erase_t<0, pack<int, long, int>>, pack<long, int>>);
+static_assert(std::same_as<pack_erase_t<1, pack<int, long, int>>, pack<int, int>>);
+static_assert(std::same_as<pack_erase_t<2, pack<int, long, int>>, pack<int, long>>);
+
+static_assert(std::same_as<pack_erase_all_t<std::index_sequence<0>, pack<int, long, int>>, pack<long, int>>);
+static_assert(std::same_as<pack_erase_all_t<std::index_sequence<1>, pack<int, long, int>>, pack<int, int>>);
+static_assert(std::same_as<pack_erase_all_t<std::index_sequence<2>, pack<int, long, int>>, pack<int, long>>);
+static_assert(std::same_as<pack_erase_all_t<std::index_sequence<0, 2>, pack<int, long, int>>, pack<long>>);
+static_assert(std::same_as<pack_erase_all_t<std::index_sequence<0, 1>, pack<int, long, int>>, pack<int>>);
+static_assert(std::same_as<pack_erase_all_t<std::index_sequence<1, 2>, pack<int, long, int>>, pack<int>>);
+static_assert(std::same_as<pack_erase_all_t<std::index_sequence<1, 1>, pack<int, long, int>>, pack<int, int>>);
+static_assert(std::same_as<pack_erase_all_t<std::index_sequence<>, pack<int, long, int>>, pack<int, long, int>>);
+static_assert(std::same_as<pack_erase_all_t<std::index_sequence<>, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_insert_t<int, 0, pack<float, long, double>>, pack<int, float, long, double>>);
+static_assert(std::same_as<pack_insert_t<int, 1, pack<float, long, double>>, pack<float, int, long, double>>);
+static_assert(std::same_as<pack_insert_t<int, 2, pack<float, long, double>>, pack<float, long, int, double>>);
+static_assert(std::same_as<pack_insert_t<int, 3, pack<float, long, double>>, pack<float, long, double, int>>);
+static_assert(std::same_as<pack_insert_t<int, 0, pack<>>, pack<int>>);
+
+static_assert(std::same_as<pack_insert_all_t<pack<int, char>, 0, pack<float, long, double>>, pack<int, char, float, long, double>>);
+static_assert(std::same_as<pack_insert_all_t<pack<int, char>, 1, pack<float, long, double>>, pack<float, int, char, long, double>>);
+static_assert(std::same_as<pack_insert_all_t<pack<int, char>, 2, pack<float, long, double>>, pack<float, long, int, char, double>>);
+static_assert(std::same_as<pack_insert_all_t<pack<int, char>, 3, pack<float, long, double>>, pack<float, long, double, int, char>>);
+static_assert(std::same_as<pack_insert_all_t<pack<int, char>, 0, pack<>>, pack<int, char>>);
+static_assert(std::same_as<pack_insert_all_t<pack<>, 0, pack<>>, pack<>>);
+static_assert(std::same_as<pack_insert_all_t<pack<>, 0, pack<float, long, double>>, pack<float, long, double>>);
+static_assert(std::same_as<pack_insert_all_t<pack<>, 1, pack<float, long, double>>, pack<float, long, double>>);
+static_assert(std::same_as<pack_insert_all_t<pack<>, 2, pack<float, long, double>>, pack<float, long, double>>);
+static_assert(std::same_as<pack_insert_all_t<pack<>, 3, pack<float, long, double>>, pack<float, long, double>>);
+
+static_assert(std::same_as<pack_filter_t<std::is_integral, pack<float, long, double>>, pack<long>>);
+static_assert(std::same_as<pack_filter_t<std::is_integral, pack<float, double>>, pack<>>);
+static_assert(std::same_as<pack_filter_t<std::is_integral, pack<char, long>>, pack<char, long>>);
+static_assert(std::same_as<pack_filter_t<std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_erase_filter_t<std::is_integral, pack<float, long, double>>, pack<float, double>>);
+static_assert(std::same_as<pack_erase_filter_t<std::is_integral, pack<float, double>>, pack<float, double>>);
+static_assert(std::same_as<pack_erase_filter_t<std::is_integral, pack<char, long>>, pack<>>);
+static_assert(std::same_as<pack_erase_filter_t<std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_remove_t<int, pack<float, int, double, int>>, pack<float, double>>);
+static_assert(std::same_as<pack_remove_t<int, pack<float, double>>, pack<float, double>>);
+static_assert(std::same_as<pack_remove_t<int, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_remove_all_t<pack<int>, pack<float, int, double, int>>, pack<float, double>>);
+static_assert(std::same_as<pack_remove_all_t<pack<int>, pack<float, double>>, pack<float, double>>);
+static_assert(std::same_as<pack_remove_all_t<pack<int>, pack<>>, pack<>>);
+static_assert(std::same_as<pack_remove_all_t<pack<>, pack<>>, pack<>>);
+static_assert(std::same_as<pack_remove_all_t<pack<>, pack<float, int>>, pack<float, int>>);
+
+static_assert(std::same_as<pack_reverse_t<pack<float, int, char>>, pack<char, int, float>>);
+static_assert(std::same_as<pack_reverse_t<pack<float, int>>, pack<int, float>>);
+static_assert(std::same_as<pack_reverse_t<pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_reverse_t<pack<>>, pack<>>);
+
+template<class Ty> using transform_to_int = int;
+template<class Ty> using transform_to_self = Ty;
+
+static_assert(std::same_as<pack_transform_t<transform_to_int, pack<>>, pack<>>);
+static_assert(std::same_as<pack_transform_t<transform_to_int, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_transform_t<transform_to_int, pack<float>>, pack<int>>);
+static_assert(std::same_as<pack_transform_t<transform_to_int, pack<float, int>>, pack<int, int>>);
+static_assert(std::same_as<pack_transform_t<transform_to_self, pack<float, int>>, pack<float, int>>);
+
+static_assert(std::same_as<pack_append_t<char, pack<float, int>>, pack<float, int, char>>);
+static_assert(std::same_as<pack_append_t<char, pack<>>, pack<char>>);
+
+static_assert(std::same_as<pack_append_all_t<pack<char>, pack<float, int>>, pack<float, int, char>>);
+static_assert(std::same_as<pack_append_all_t<pack<char>, pack<>>, pack<char>>);
+static_assert(std::same_as<pack_append_all_t<pack<char, int>, pack<float, long>>, pack<float, long, char, int>>);
+static_assert(std::same_as<pack_append_all_t<pack<char, int>, pack<>>, pack<char, int>>);
+
+static_assert(std::same_as<pack_prepend_t<char, pack<float, int>>, pack<char, float, int>>);
+static_assert(std::same_as<pack_prepend_t<char, pack<>>, pack<char>>);
+
+static_assert(std::same_as<pack_prepend_all_t<pack<char>, pack<float, int>>, pack<char, float, int>>);
+static_assert(std::same_as<pack_prepend_all_t<pack<char>, pack<>>, pack<char>>);
+static_assert(std::same_as<pack_prepend_all_t<pack<char, int>, pack<float, long>>, pack<char, int, float, long>>);
+static_assert(std::same_as<pack_prepend_all_t<pack<char, int>, pack<>>, pack<char, int>>);
+
+static_assert(std::same_as<pack_swap_t<int, 0, pack<float, char, double>>, pack<int, char, double>>);
+static_assert(std::same_as<pack_swap_t<int, 1, pack<float, char, double>>, pack<float, int, double>>);
+static_assert(std::same_as<pack_swap_t<int, 2, pack<float, char, double>>, pack<float, char, int>>);
+static_assert(std::same_as<pack_swap_t<int, 0, pack<char>>, pack<int>>);
+static_assert(std::same_as<pack_swap_t<int, 0, pack<int>>, pack<int>>);
+
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<0>, pack<float, char, double>>, pack<int, char, double>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<1>, pack<float, char, double>>, pack<float, int, double>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<2>, pack<float, char, double>>, pack<float, char, int>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<0>, pack<char>>, pack<int>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<0>, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<0, 2>, pack<float, char, double>>, pack<int, char, int>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<0, 1>, pack<float, char, double>>, pack<int, int, double>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<1, 2>, pack<float, char, double>>, pack<float, int, int>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<1, 1>, pack<float, char, double>>, pack<float, int, double>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<>, pack<float, char, double>>, pack<float, char, double>>);
+static_assert(std::same_as<pack_swap_all_t<int, std::index_sequence<>, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_replace_t<int, char, pack<float, char, double>>, pack<float, char, double>>);
+static_assert(std::same_as<pack_replace_t<int, char, pack<float, int, double>>, pack<float, char, double>>);
+static_assert(std::same_as<pack_replace_t<int, char, pack<int, int, double>>, pack<char, char, double>>);
+static_assert(std::same_as<pack_replace_t<int, char, pack<int, int, int>>, pack<char, char, char>>);
+static_assert(std::same_as<pack_replace_t<int, char, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_replace_filter_t<char, std::is_integral, pack<float, float, double>>, pack<float, float, double>>);
+static_assert(std::same_as<pack_replace_filter_t<char, std::is_integral, pack<float, char, double>>, pack<float, char, double>>);
+static_assert(std::same_as<pack_replace_filter_t<char, std::is_integral, pack<float, int, double>>, pack<float, char, double>>);
+static_assert(std::same_as<pack_replace_filter_t<char, std::is_integral, pack<int, int, double>>, pack<char, char, double>>);
+static_assert(std::same_as<pack_replace_filter_t<char, std::is_integral, pack<int, int, int>>, pack<char, char, char>>);
+static_assert(std::same_as<pack_replace_filter_t<char, std::is_integral, pack<>>, pack<>>);
+
+static_assert(std::same_as<pack_sub_t<0, 1, pack<int, double, char, float, long>>, pack<int>>);
+static_assert(std::same_as<pack_sub_t<0, 3, pack<int, double, char, float, long>>, pack<int, double, char>>);
+static_assert(std::same_as<pack_sub_t<2, 3, pack<int, double, char, float, long>>, pack<char>>);
+static_assert(std::same_as<pack_sub_t<4, 5, pack<int, double, char, float, long>>, pack<long>>);
+static_assert(std::same_as<pack_sub_t<5, 5, pack<int, double, char, float, long>>, pack<>>);
+static_assert(std::same_as<pack_sub_t<0, 5, pack<int, double, char, float, long>>, pack<int, double, char, float, long>>);
+static_assert(std::same_as<pack_sub_t<0, 0, pack<>>, pack<>>);
+
+template<class A, class B>
+struct sort_on_size {
+    constexpr static bool value = sizeof(A) < sizeof(B);
+};
+
+static_assert(std::same_as<pack_sort_t<sort_on_size, pack<double, char, int>>, pack<char, int, double>>);
+static_assert(std::same_as<pack_sort_t<sort_on_size, pack<double, char, int>>, pack<char, int, double>>);
+static_assert(std::same_as<pack_sort_t<sort_on_size, pack<int>>, pack<int>>);
+static_assert(std::same_as<pack_sort_t<sort_on_size, pack<>>, pack<>>);
+
+// ------------------------------------------------
+
+int main() {}
