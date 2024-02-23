@@ -688,6 +688,76 @@ namespace kaixo {
 
     // ------------------------------------------------
 
+    template<std::size_t I, class Pack>
+    struct pack_drop_last {
+        using type = typename pack_take<pack_size<Pack>::value - I, Pack>::type;
+    };
+
+    // Drop the last I elements of Pack
+    template<std::size_t I, class Pack>
+    using pack_drop_last_t = typename pack_drop_last<I, Pack>::type;
+    
+    // ------------------------------------------------
+
+    template<template<class> class Filter, class Pack>
+    struct pack_drop_last_while {
+        constexpr static std::size_t _last_match = pack_last_index_filter<filter_invert<Filter>::type, Pack>::value;
+        using type = typename pack_take<_last_match + 1, Pack>::type;
+    };
+
+    // Drop elements from the end of Pack while Filter matches
+    template<template<class> class Filter, class Pack>
+    using pack_drop_last_while_t = typename pack_drop_last_while<Filter, Pack>::type;
+    
+    // ------------------------------------------------
+
+    template<template<class> class Filter, class Pack>
+    struct pack_drop_last_until {
+        constexpr static std::size_t _last_match = pack_last_index_filter<Filter, Pack>::value;
+        using type = typename pack_take<_last_match + 1, Pack>::type;
+    };
+
+    // Drop elements from the end of Pack until Filter matches
+    template<template<class> class Filter, class Pack>
+    using pack_drop_last_until_t = typename pack_drop_last_until<Filter, Pack>::type;
+    
+    // ------------------------------------------------
+
+    template<std::size_t I, class Pack>
+    struct pack_take_last {
+        using type = typename pack_drop<pack_size<Pack>::value - I, Pack>::type;
+    };
+
+    // Take the last I elements of Pack
+    template<std::size_t I, class Pack>
+    using pack_take_last_t = typename pack_take_last<I, Pack>::type;
+
+    // ------------------------------------------------
+
+    template<template<class> class Filter, class Pack>
+    struct pack_take_last_while {
+        constexpr static std::size_t _last_match = pack_last_index_filter<filter_invert<Filter>::type, Pack>::value;
+        using type = typename pack_drop<_last_match + 1, Pack>::type;
+    };
+
+    // Take elements from the end of Pack while Filter matches
+    template<template<class> class Filter, class Pack>
+    using pack_take_last_while_t = typename pack_take_last_while<Filter, Pack>::type;
+
+    // ------------------------------------------------
+
+    template<template<class> class Filter, class Pack>
+    struct pack_take_last_until {
+        constexpr static std::size_t _last_match = pack_last_index_filter<Filter, Pack>::value;
+        using type = typename pack_drop<_last_match + 1, Pack>::type;
+    };
+
+    // Take elements from the end of Pack until Filter matches
+    template<template<class> class Filter, class Pack>
+    using pack_take_last_until_t = typename pack_take_last_until<Filter, Pack>::type;
+
+    // ------------------------------------------------
+
     template<class ...Packs>
     struct pack_concat;
 
