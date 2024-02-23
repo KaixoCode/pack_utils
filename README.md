@@ -185,6 +185,21 @@ struct sort_on_size {
 };
 ```
 
+This utility header also contains a couple `Filter` and `Sorter` utilities:
+```cpp
+// Combine Filters using logical and
+filter_and<Filters...>
+
+// Combine Filters using logical or
+filter_or<Filters...>
+
+// Invert Filter using logical not
+filter_invert<Filter>
+
+// Reverse the Sorter
+sorter_reverse<Sorter>
+```
+
 Here are a bunch of examples:
 
 ```cpp

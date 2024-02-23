@@ -19,7 +19,7 @@ namespace kaixo {
 
     // ------------------------------------------------
 
-    // Combine filters using logical and
+    // Combine Filters using logical and
     template<template<class> class ...Filter>
     struct filter_and {
         template<class Ty>
@@ -30,7 +30,7 @@ namespace kaixo {
 
     // ------------------------------------------------
 
-    // Combine filters using logical or
+    // Combine Filters using logical or
     template<template<class> class ...Filter>
     struct filter_or {
         template<class Ty>
@@ -41,7 +41,7 @@ namespace kaixo {
 
     // ------------------------------------------------
 
-    // Combine filters using logical or
+    // Invert Filter using logical not
     template<template<class> class Filter>
     struct filter_invert {
         template<class Ty>
