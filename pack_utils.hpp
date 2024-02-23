@@ -82,7 +82,7 @@ namespace kaixo {
     template<std::size_t I, class Ty, class ...Tys>
     struct pack_element<I, pack<Ty, Tys...>> : pack_element<I - 1, pack<Tys...>> {};
 
-    // Get the Ith element in Pack
+    // Ith element in Pack
     template<std::size_t I, class Pack>
     using pack_element_t = typename pack_element<I, Pack>::type;
 
@@ -115,7 +115,7 @@ namespace kaixo {
         constexpr static bool value = (pack_contains<Types, pack<Tys...>>::value && ...);
     };
 
-    // Pack contains all Types
+    // Pack contains all in Types
     template<class Types, class Pack>
     constexpr bool pack_contains_all_v = pack_contains_all<Types, Pack>::value;
 
@@ -129,7 +129,7 @@ namespace kaixo {
         constexpr static bool value = (pack_contains<Types, pack<Tys...>>::value || ...);
     };
 
-    // Pack contains any in Find
+    // Pack contains any in Types
     template<class Types, class Pack>
     constexpr bool pack_contains_any_v = pack_contains_any<Types, Pack>::value;
 
@@ -212,7 +212,7 @@ namespace kaixo {
         constexpr static std::size_t value = (static_cast<bool>(Filter<Tys>::value) + ... + 0);
     };
 
-    // Count number of matched for Filter in Pack
+    // Count number of matches for Filter in Pack
     template<template<class> class Filter, class Pack>
     constexpr std::size_t pack_count_filter_v = pack_count_filter<Filter, Pack>::value;
 
@@ -238,32 +238,32 @@ namespace kaixo {
         constexpr static std::size_t value = 0;
     };
 
-    template<class Type, std::size_t I>
-    struct pack_nth_index_of<Type, I, pack<>> {
+    template<class Type, std::size_t N>
+    struct pack_nth_index_of<Type, N, pack<>> {
         constexpr static bool _found = false;
         constexpr static std::size_t value = npos;
     };
 
-    // Index of the Ith occurance of Type in Pack
-    template<class Type, std::size_t I, class Pack>
-    constexpr std::size_t pack_nth_index_of_v = pack_nth_index_of<Type, I, Pack>::value;
+    // Index of the Nth occurence of Type in Pack
+    template<class Type, std::size_t N, class Pack>
+    constexpr std::size_t pack_nth_index_of_v = pack_nth_index_of<Type, N, Pack>::value;
 
     // ------------------------------------------------
 
-    template<class Types, std::size_t I, class Pack>
+    template<class Types, std::size_t N, class Pack>
     struct pack_nth_index_of_any;
 
-    template<class ...Types, std::size_t I, class Ty, class ...Tys>
+    template<class ...Types, std::size_t N, class Ty, class ...Tys>
         requires (!(std::same_as<Types, Ty> || ...))
-    struct pack_nth_index_of_any<pack<Types...>, I, pack<Ty, Tys...>> {
-        constexpr static std::size_t _last = pack_nth_index_of_any<pack<Types...>, I, pack<Tys...>>::value;
+    struct pack_nth_index_of_any<pack<Types...>, N, pack<Ty, Tys...>> {
+        constexpr static std::size_t _last = pack_nth_index_of_any<pack<Types...>, N, pack<Tys...>>::value;
         constexpr static std::size_t value = _last == npos ? npos : _last + 1;
     };
 
-    template<class ...Types, std::size_t I, class Ty, class ...Tys>
+    template<class ...Types, std::size_t N, class Ty, class ...Tys>
         requires (std::same_as<Types, Ty> || ...)
-    struct pack_nth_index_of_any<pack<Types...>, I, pack<Ty, Tys...>> {
-        constexpr static std::size_t _last = pack_nth_index_of_any<pack<Types...>, I - 1, pack<Tys...>>::value;
+    struct pack_nth_index_of_any<pack<Types...>, N, pack<Ty, Tys...>> {
+        constexpr static std::size_t _last = pack_nth_index_of_any<pack<Types...>, N - 1, pack<Tys...>>::value;
         constexpr static std::size_t value = _last == npos ? npos : _last + 1;
     };
 
@@ -273,32 +273,32 @@ namespace kaixo {
         constexpr static std::size_t value = 0;
     };
 
-    template<class Types, std::size_t I>
-    struct pack_nth_index_of_any<Types, I, pack<>> {
+    template<class Types, std::size_t N>
+    struct pack_nth_index_of_any<Types, N, pack<>> {
         constexpr static bool _found = false;
         constexpr static std::size_t value = npos;
     };
 
-    // Index of the Ith occurance of any of Types in Pack
-    template<class Types, std::size_t I, class Pack>
-    constexpr std::size_t pack_nth_index_of_any_v = pack_nth_index_of_any<Types, I, Pack>::value;
+    // Index of the Nth occurence of any of Types in Pack
+    template<class Types, std::size_t N, class Pack>
+    constexpr std::size_t pack_nth_index_of_any_v = pack_nth_index_of_any<Types, N, Pack>::value;
 
     // ------------------------------------------------
 
-    template<template<class> class Filter, std::size_t I, class Pack>
+    template<template<class> class Filter, std::size_t N, class Pack>
     struct pack_nth_index_filter;
 
-    template<template<class> class Filter, std::size_t I, class Ty, class ...Tys>
+    template<template<class> class Filter, std::size_t N, class Ty, class ...Tys>
         requires (!Filter<Ty>::value)
-    struct pack_nth_index_filter<Filter, I, pack<Ty, Tys...>> {
-        constexpr static std::size_t _last = pack_nth_index_filter<Filter, I, pack<Tys...>>::value;
+    struct pack_nth_index_filter<Filter, N, pack<Ty, Tys...>> {
+        constexpr static std::size_t _last = pack_nth_index_filter<Filter, N, pack<Tys...>>::value;
         constexpr static std::size_t value = _last == npos ? npos : _last + 1;
     };
 
-    template<template<class> class Filter, std::size_t I, class Ty, class ...Tys>
+    template<template<class> class Filter, std::size_t N, class Ty, class ...Tys>
         requires (Filter<Ty>::value)
-    struct pack_nth_index_filter<Filter, I, pack<Ty, Tys...>> {
-        constexpr static std::size_t _last = pack_nth_index_filter<Filter, I - 1, pack<Tys...>>::value;
+    struct pack_nth_index_filter<Filter, N, pack<Ty, Tys...>> {
+        constexpr static std::size_t _last = pack_nth_index_filter<Filter, N - 1, pack<Tys...>>::value;
         constexpr static std::size_t value = _last == npos ? npos : _last + 1;
     };
 
@@ -308,15 +308,15 @@ namespace kaixo {
         constexpr static std::size_t value = 0;
     };
 
-    template<template<class> class Filter, std::size_t I>
-    struct pack_nth_index_filter<Filter, I, pack<>> {
+    template<template<class> class Filter, std::size_t N>
+    struct pack_nth_index_filter<Filter, N, pack<>> {
         constexpr static bool _found = false;
         constexpr static std::size_t value = npos;
     };
 
-    // Index of the Ith match of Filter in Pack
-    template<template<class> class Filter, std::size_t I, class Pack>
-    constexpr std::size_t pack_nth_index_filter_v = pack_nth_index_filter<Filter, I, Pack>::value;
+    // Index of the Nth match of Filter in Pack
+    template<template<class> class Filter, std::size_t N, class Pack>
+    constexpr std::size_t pack_nth_index_filter_v = pack_nth_index_filter<Filter, N, Pack>::value;
 
     // ------------------------------------------------
 
@@ -325,7 +325,7 @@ namespace kaixo {
         constexpr static std::size_t value = pack_nth_index_of<Type, 0, Pack>::value;
     };
 
-    // Index of the first occurance of Type in Pack
+    // Index of the first occurence of Type in Pack
     template<class Type, class Pack>
     constexpr std::size_t pack_index_of_v = pack_index_of<Type, Pack>::value;
 
@@ -336,7 +336,7 @@ namespace kaixo {
         constexpr static std::size_t value = pack_nth_index_of_any<Types, 0, Pack>::value;
     };
 
-    // Index of the first occurance of any of Types in Pack
+    // Index of the first occurence of any of Types in Pack
     template<class Types, class Pack>
     constexpr std::size_t pack_index_of_any_v = pack_index_of_any<Types, Pack>::value;
 
@@ -358,7 +358,7 @@ namespace kaixo {
         constexpr static std::size_t value = pack_nth_index_of<Type, 0, Pack>::value;
     };
 
-    // Index of the first occurance of Type in Pack
+    // Index of the first occurence of Type in Pack
     template<class Type, class Pack>
     constexpr std::size_t pack_first_index_of_v = pack_first_index_of<Type, Pack>::value;
 
@@ -369,7 +369,7 @@ namespace kaixo {
         constexpr static std::size_t value = pack_nth_index_of_any<Types, 0, Pack>::value;
     };
 
-    // Index of the first occurance of any of Types in Pack
+    // Index of the first occurence of any of Types in Pack
     template<class Types, class Pack>
     constexpr std::size_t pack_first_index_of_any_v = pack_first_index_of_any<Types, Pack>::value;
 
@@ -391,7 +391,7 @@ namespace kaixo {
         constexpr static std::size_t value = pack_nth_index_of<Type, pack_count<Type, Pack>::value - 1, Pack>::value;
     };
 
-    // Index of the last occurance of Type in Pack
+    // Index of the last occurence of Type in Pack
     template<class Type, class Pack>
     constexpr std::size_t pack_last_index_of_v = pack_last_index_of<Type, Pack>::value;
 
@@ -402,7 +402,7 @@ namespace kaixo {
         constexpr static std::size_t value = pack_nth_index_of_any<Types, pack_count_all<Types, Pack>::value - 1, Pack>::value;
     };
 
-    // Index of the last occurance of any of Types in Pack
+    // Index of the last occurence of any of Types in Pack
     template<class Types, class Pack>
     constexpr std::size_t pack_last_index_of_any_v = pack_last_index_of_any<Types, Pack>::value;
 
@@ -451,7 +451,7 @@ namespace kaixo {
         using type = typename _impl<std::make_index_sequence<pack_count_all<Types, Pack>::value>>::type;
     };
 
-    // All indices of Type in Pack
+    // All indices of all Types in Pack
     template<class Types, class Pack>
     using pack_indices_of_all_t = pack_indices_of_all<Types, Pack>::type;
 
@@ -470,7 +470,7 @@ namespace kaixo {
         using type = typename _impl<std::make_index_sequence<pack_count_filter<Filter, Pack>::value>>::type;
     };
 
-    // All indices of matches of Filter in Pack
+    // All indices of all matches of Filter in Pack
     template<template<class> class Filter, class Pack>
     using pack_indices_filter_t = pack_indices_filter<Filter, Pack>::type;
 
@@ -526,7 +526,7 @@ namespace kaixo {
         using type = pack<typename pack_element<Is, Pack>::type...>;
     };
 
-    // Only keep all Indices in Pack
+    // Create new pack by selecting Indices from Pack
     template<class Indices, class Pack>
     using pack_at_indices_t = typename pack_at_indices<Indices, Pack>::type;
 
@@ -649,7 +649,7 @@ namespace kaixo {
         using type = typename _impl<_first_non_match>::type;
     };
 
-    // Take the first I elements of Pack
+    // Take elements from Pack while Filter matches
     template<template<class> class Filter, class Pack>
     using pack_take_while_t = typename pack_take_while<Filter, Pack>::type;
 
@@ -671,7 +671,7 @@ namespace kaixo {
         using type = typename _impl<_first_non_match>::type;
     };
 
-    // Take the first I elements of Pack
+    // Take elements from Pack until Filter matches
     template<template<class> class Filter, class Pack>
     using pack_take_until_t = typename pack_take_until<Filter, Pack>::type;
 
@@ -794,6 +794,7 @@ namespace kaixo {
         using type = typename pack_erase_all<typename pack_indices_of<Type, Pack>::type, Pack>::type;
     };
 
+    // Remove Type from Pack
     template<class Type, class Pack>
     using pack_remove_t = typename pack_remove<Type, Pack>::type;
 
@@ -804,6 +805,7 @@ namespace kaixo {
         using type = typename pack_erase_all<typename pack_indices_of_all<Types, Pack>::type, Pack>::type;
     };
 
+    // Remove all Types from Pack
     template<class Types, class Pack>
     using pack_remove_all_t = typename pack_remove_all<Types, Pack>::type;
 
@@ -827,7 +829,7 @@ namespace kaixo {
         using type = typename detail::pack_reverse<std::index_sequence_for<Tys...>, pack<Tys...>>::type;
     };
 
-    // Reverse elements in Pack
+    // Reverse order of elements in Pack
     template<class Pack>
     using pack_reverse_t = typename pack_reverse<Pack>::type;
 
@@ -933,7 +935,7 @@ namespace kaixo {
         using type = typename _impl<std::index_sequence_for<Tys...>>::type;
     };
 
-    // Swap all elements at Indices of Pack with Type
+    // Swap all elements at Indices in Pack with Type
     template<class Type, class Indices, class Pack>
     using pack_swap_all_t = typename pack_swap_all<Type, Indices, Pack>::type;
 
@@ -950,17 +952,17 @@ namespace kaixo {
 
     // ------------------------------------------------
 
-    template<class Type, template<class> class Filter, class Pack>
+    template<template<class> class Filter, class Replacement, class Pack>
     struct pack_replace_filter;
 
-    template<class Type, template<class> class Filter, class ...Tys>
-    struct pack_replace_filter<Type, Filter, pack<Tys...>> {
-        using type = pack<std::conditional_t<Filter<Tys>::value, Type, Tys>...>;
+    template<template<class> class Filter, class Replacement, class ...Tys>
+    struct pack_replace_filter<Filter, Replacement, pack<Tys...>> {
+        using type = pack<std::conditional_t<Filter<Tys>::value, Replacement, Tys>...>;
     };
 
-    // Replace all matches of Filter in Pack with Type
-    template<class Type, template<class> class Filter, class Pack>
-    using pack_replace_filter_t = typename pack_replace_filter<Type, Filter, Pack>::type;
+    // Replace all matches of Filter in Pack with Replacement
+    template<template<class> class Filter, class Replacement, class Pack>
+    using pack_replace_filter_t = typename pack_replace_filter<Filter, Replacement, Pack>::type;
 
     // ------------------------------------------------
 
