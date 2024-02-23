@@ -539,7 +539,6 @@ struct sort_on_size {
 };
 
 static_assert(std::same_as<pack_sort_t<sort_on_size, pack<double, char, int>>, pack<char, int, double>>);
-static_assert(std::same_as<pack_sort_t<sort_on_size, pack<double, char, int>>, pack<char, int, double>>);
 static_assert(std::same_as<pack_sort_t<sort_on_size, pack<int>>, pack<int>>);
 static_assert(std::same_as<pack_sort_t<sort_on_size, pack<>>, pack<>>);
 
