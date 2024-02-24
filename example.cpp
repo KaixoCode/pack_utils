@@ -156,6 +156,14 @@ static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<int, lon
 static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<float, double>>, std::index_sequence<>>);
 static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<>>, std::index_sequence<>>);
 
+static_assert(std::same_as<pack_indices_not_filter_t<std::is_integral, pack<double, float, int, long, int>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_indices_not_filter_t<std::is_integral, pack<int>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_not_filter_t<std::is_integral, pack<int, double, float>>, std::index_sequence<1, 2>>);
+static_assert(std::same_as<pack_indices_not_filter_t<std::is_integral, pack<double, float, int>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_indices_not_filter_t<std::is_integral, pack<int, long, int>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_not_filter_t<std::is_integral, pack<float, double>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_indices_not_filter_t<std::is_integral, pack<>>, std::index_sequence<>>);
+
 static_assert(std::same_as<pack_indices_not_of_t<int, pack<double, float, int, long, int>>, std::index_sequence<0, 1, 3>>);
 static_assert(std::same_as<pack_indices_not_of_t<int, pack<int>>, std::index_sequence<>>);
 static_assert(std::same_as<pack_indices_not_of_t<int, pack<int, double, float>>, std::index_sequence<1, 2>>);

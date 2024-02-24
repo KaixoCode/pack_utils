@@ -535,6 +535,25 @@ namespace kaixo {
     // All indices of all matches of Filter in Pack
     template<template<class> class Filter, class Pack>
     using pack_indices_filter_t = pack_indices_filter<Filter, Pack>::type;
+    
+    // ------------------------------------------------
+
+    template<template<class> class Filter, class Pack>
+    struct pack_indices_not_filter {
+        template<class>
+        struct _impl;
+
+        template<std::size_t ...Is>
+        struct _impl<std::index_sequence<Is...>> {
+            using type = std::index_sequence<pack_nth_index_filter<filter_invert<Filter>::type, Is, Pack>::value...>;
+        };
+
+        using type = typename _impl<std::make_index_sequence<pack_count_filter<filter_invert<Filter>::type, Pack>::value>>::type;
+    };
+
+    // All indices of all non-matches of Filter in Pack
+    template<template<class> class Filter, class Pack>
+    using pack_indices_not_filter_t = pack_indices_not_filter<Filter, Pack>::type;
 
     // ------------------------------------------------
 
@@ -1937,7 +1956,7 @@ namespace kaixo {
             
             namespace detail {
                 template<template<class, class> class Ty, class Type>
-                struct partial_first {
+                struct partial_first_simple_pair {
                     template<class Pack>
                     using type = Ty<Type, Pack>;
                 };
@@ -1945,11 +1964,29 @@ namespace kaixo {
 
             // Remove Type
             template<class Type>
-            constexpr _indices_fun<typename detail::partial_first<pack_indices_not_of, Type>::type> remove{};
+            constexpr _indices_fun<typename detail::partial_first_simple_pair<pack_indices_not_of, Type>::type> remove{};
             
             // Remove all Types
             template<class Types>
-            constexpr _indices_fun<typename detail::partial_first<pack_indices_not_of_all, Types>::type> remove_all{};
+            constexpr _indices_fun<typename detail::partial_first_simple_pair<pack_indices_not_of_all, Types>::type> remove_all{};
+
+            // ------------------------------------------------
+
+            namespace detail {
+                template<template<template<class> class, class> class Ty, template<class> class Filter>
+                struct partial_first_filter_pair {
+                    template<class Pack>
+                    using type = Ty<Filter, Pack>;
+                };
+            }
+
+            // Only keep all that match Filter
+            template<template<class> class Filter>
+            constexpr _indices_fun<typename detail::partial_first_filter_pair<pack_indices_filter, Filter>::type> filter{};
+            
+            // Only keep all that match Filter
+            template<template<class> class Filter>
+            constexpr _indices_fun<typename detail::partial_first_filter_pair<pack_indices_filter, Filter>::type> filter{};
 
             // ------------------------------------------------
 
