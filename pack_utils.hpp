@@ -497,7 +497,7 @@ namespace kaixo {
     // All indices of Type in Pack
     template<class Type, class Pack>
     using pack_indices_of_t = pack_indices_of<Type, Pack>::type;
-
+    
     // ------------------------------------------------
 
     template<class Types, class Pack>
@@ -535,6 +535,38 @@ namespace kaixo {
     // All indices of all matches of Filter in Pack
     template<template<class> class Filter, class Pack>
     using pack_indices_filter_t = pack_indices_filter<Filter, Pack>::type;
+
+    // ------------------------------------------------
+
+    template<class Type, class Pack>
+    struct pack_indices_not_of {
+        template<class Other>
+        struct _impl {
+            constexpr static bool value = !std::same_as<Other, Type>;
+        };
+
+        using type = typename pack_indices_filter<_impl, Pack>::type;
+    };
+
+    // All indices not of Type in Pack
+    template<class Type, class Pack>
+    using pack_indices_not_of_t = pack_indices_not_of<Type, Pack>::type;
+    
+    // ------------------------------------------------
+
+    template<class Types, class Pack>
+    struct pack_indices_not_of_all {
+        template<class Other>
+        struct _impl {
+            constexpr static bool value = !pack_contains<Other, Types>::value;
+        };
+
+        using type = typename pack_indices_filter<_impl, Pack>::type;
+    };
+
+    // All indices not of all Types in Pack
+    template<class Types, class Pack>
+    using pack_indices_not_of_all_t = pack_indices_not_of_all<Types, Pack>::type;
 
     // ------------------------------------------------
 
@@ -1823,12 +1855,13 @@ namespace kaixo {
         // ------------------------------------------------
 
         template<view View, template<class> class Indices>
-        struct unique_view : view_interface<unique_view<View, Indices>> {
+        struct indices_view : view_interface<indices_view<View, Indices>> {
 
             // ------------------------------------------------
 
             using _pack = typename as_pack<View>::type;
-            using _unique = typename pack_at_indices<typename Indices<_pack>::type, _pack>::type;
+            using _indices = typename Indices<_pack>::type;
+            using _at_indices = typename pack_at_indices<_indices, _pack>::type;
 
             // ------------------------------------------------
 
@@ -1838,20 +1871,19 @@ namespace kaixo {
 
             constexpr static bool is_const = View::is_const;
             constexpr static bool is_reference = View::is_reference;
-            constexpr static std::size_t size = pack_size<_unique>::value;
+            constexpr static std::size_t size = pack_size<_at_indices>::value;
 
             // ------------------------------------------------
 
             template<std::size_t N>
                 requires (N < size)
-            using element = typename pack_element<N, _unique>::type;
+            using element = typename pack_element<N, _at_indices>::type;
 
             // ------------------------------------------------
 
             template<std::size_t N, class Self>
                 requires (N < size)
             constexpr get_type_t<Self, N> get(this Self&& self) {
-                using _indices = typename Indices<_pack>::type;
                 constexpr std::size_t _index = pack_indices_element<N, _indices>::value;
                 return std::forward<Self>(self).view.template get<_index>();
             }
@@ -1867,28 +1899,27 @@ namespace kaixo {
             // ------------------------------------------------
 
             template<template<class> class Indices>
-            struct _unique_fun : pipe_interface<_unique_fun<Indices>> {
+            struct _indices_fun : pipe_interface<_indices_fun<Indices>> {
 
                 template<tuple_like Tpl>
                 constexpr auto operator()(Tpl&& tuple) const {
                     if constexpr (std::tuple_size_v<std::decay_t<Tpl>> == 0) {
                         return empty_view{};
-                    }
-                    else {
-                        return unique_view<all_t<Tpl>, Indices>{.view = all(std::forward<Tpl>(tuple)) };
+                    } else {
+                        return indices_view<all_t<Tpl>, Indices>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
 
             };
 
             // First unique occurence of each type
-            constexpr _unique_fun<pack_first_indices> unique{};
+            constexpr _indices_fun<pack_first_indices> unique{};
 
             // First unique occurence of each type
-            constexpr _unique_fun<pack_first_indices> first_unique{};
+            constexpr _indices_fun<pack_first_indices> first_unique{};
 
             // Last unique occurence of each type
-            constexpr _unique_fun<pack_last_indices> last_unique{};
+            constexpr _indices_fun<pack_last_indices> last_unique{};
 
             namespace detail {
                 template<std::size_t N>
@@ -1900,7 +1931,25 @@ namespace kaixo {
 
             // Nth unique occurence of each type
             template<std::size_t N>
-            constexpr _unique_fun<typename detail::_pack_nth_indices_last_unique<N>::type> nth_unique{};
+            constexpr _indices_fun<typename detail::_pack_nth_indices_last_unique<N>::type> nth_unique{};
+
+            // ------------------------------------------------
+            
+            namespace detail {
+                template<template<class, class> class Ty, class Type>
+                struct partial_first {
+                    template<class Pack>
+                    using type = Ty<Type, Pack>;
+                };
+            }
+
+            // Remove Type
+            template<class Type>
+            constexpr _indices_fun<typename detail::partial_first<pack_indices_not_of, Type>::type> remove{};
+            
+            // Remove all Types
+            template<class Types>
+            constexpr _indices_fun<typename detail::partial_first<pack_indices_not_of_all, Types>::type> remove_all{};
 
             // ------------------------------------------------
 

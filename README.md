@@ -85,6 +85,12 @@ pack_indices_of_all<Types, Pack>
 // All indices of all matches of Filter in Pack
 pack_indices_filter<Filter, Pack>
 
+// All indices not of Type in Pack
+pack_indices_not_of<Type, Pack>
+
+// All indices not of all Types in Pack
+pack_indices_not_of_all<Types, Pack>
+
 // First indices of all elements in Pack
 pack_first_indices<Pack>
 
@@ -398,6 +404,27 @@ static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<double, 
 static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<int, long, int>>, std::index_sequence<0, 1, 2>>);
 static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<float, double>>, std::index_sequence<>>);
 static_assert(std::same_as<pack_indices_filter_t<std::is_integral, pack<>>, std::index_sequence<>>);
+
+
+static_assert(std::same_as<pack_indices_not_of_t<int, pack<double, float, int, long, int>>, std::index_sequence<0, 1, 3>>);
+static_assert(std::same_as<pack_indices_not_of_t<int, pack<int>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_not_of_t<int, pack<int, double, float>>, std::index_sequence<1, 2>>);
+static_assert(std::same_as<pack_indices_not_of_t<int, pack<double, float, int>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_indices_not_of_t<int, pack<int, long, int>>, std::index_sequence<1>>);
+static_assert(std::same_as<pack_indices_not_of_t<int, pack<float, double>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_indices_not_of_t<int, pack<>>, std::index_sequence<>>);
+
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<int>, pack<double, float, int, long, int>>, std::index_sequence<0, 1, 3>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<int>, pack<int>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<int>, pack<int, double, float>>, std::index_sequence<1, 2>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<int>, pack<double, float, int>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<int>, pack<int, long, int>>, std::index_sequence<1>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<int>, pack<float, double>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<int>, pack<>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<>, pack<>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<>, pack<int, float>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<int, float>, pack<int, double, float>>, std::index_sequence<1>>);
+static_assert(std::same_as<pack_indices_not_of_all_t<pack<int, float>, pack<char, double, long>>, std::index_sequence<0, 1, 2>>);
 
 static_assert(std::same_as<pack_first_indices_t<pack<int, double, int, float>>, std::index_sequence<0, 1, 3>>);
 static_assert(std::same_as<pack_first_indices_t<pack<int, double, char, float>>, std::index_sequence<0, 1, 2, 3>>);
@@ -732,6 +759,12 @@ last_unique
 
 // Nth unique occurence of each type
 nth_unique<N>
+
+// Remove Type
+remove<Type>
+
+// Remove all Types
+remove_all<Types>
 ```
 
 ### Examples
