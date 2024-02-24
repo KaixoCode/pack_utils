@@ -9,6 +9,9 @@ pack_size<Pack>
 // Ith element in Pack
 pack_element<I, Pack>
 
+// Ith element in Indices
+pack_indices_element<I, Indices>
+
 // Pack contains Type
 pack_contains<Type, Pack>
 
@@ -80,6 +83,12 @@ pack_indices_filter<Filter, Pack>
 
 // First indices of all elements in Pack
 pack_first_indices<Pack>
+
+// Last indices of all elements in Pack
+pack_last_indices<Pack>
+
+// Nth indices of all elements in Pack
+pack_nth_indices<N, Pack>
 
 // Create new pack by selecting Indices from Pack
 pack_at_indices<Indices, Pack>
@@ -242,6 +251,11 @@ static_assert(std::same_as<pack_element_t<1, pack<double, int, int, int>>, int>)
 static_assert(std::same_as<pack_element_t<3, pack<double, int, int, char>>, char>);
 static_assert(std::same_as<pack_element_t<0, pack<double>>, double>);
 
+static_assert(pack_indices_element_v<0, std::index_sequence<0, 1, 2, 3>> == 0);
+static_assert(pack_indices_element_v<1, std::index_sequence<0, 1, 2, 3>> == 1);
+static_assert(pack_indices_element_v<3, std::index_sequence<0, 1, 2, 3>> == 3);
+static_assert(pack_indices_element_v<0, std::index_sequence<0>> == 0);
+
 static_assert(pack_contains_v<int, pack<double, int, float>>);
 static_assert(!pack_contains_v<char, pack<double, int, float>>);
 static_assert(!pack_contains_v<char, pack<>>);
@@ -383,6 +397,25 @@ static_assert(std::same_as<pack_first_indices_t<pack<int, double, int, double>>,
 static_assert(std::same_as<pack_first_indices_t<pack<int, int, double, double>>, std::index_sequence<0, 2>>);
 static_assert(std::same_as<pack_first_indices_t<pack<int, int, int, int>>, std::index_sequence<0>>);
 static_assert(std::same_as<pack_first_indices_t<pack<>>, std::index_sequence<>>);
+
+static_assert(std::same_as<pack_last_indices_t<pack<int, double, int, float>>, std::index_sequence<1, 2, 3>>);
+static_assert(std::same_as<pack_last_indices_t<pack<int, double, char, float>>, std::index_sequence<0, 1, 2, 3>>);
+static_assert(std::same_as<pack_last_indices_t<pack<int, double, int, double>>, std::index_sequence<2, 3>>);
+static_assert(std::same_as<pack_last_indices_t<pack<int, int, double, double>>, std::index_sequence<1, 3>>);
+static_assert(std::same_as<pack_last_indices_t<pack<int, int, int, int>>, std::index_sequence<3>>);
+static_assert(std::same_as<pack_last_indices_t<pack<>>, std::index_sequence<>>);
+
+static_assert(std::same_as<pack_nth_indices_t<0, pack<int, double, int, float>>, std::index_sequence<0, 1, 3>>);
+static_assert(std::same_as<pack_nth_indices_t<0, pack<int, double, char, float>>, std::index_sequence<0, 1, 2, 3>>);
+static_assert(std::same_as<pack_nth_indices_t<0, pack<int, double, int, double>>, std::index_sequence<0, 1>>);
+static_assert(std::same_as<pack_nth_indices_t<1, pack<int, double, int, double>>, std::index_sequence<2, 3>>);
+static_assert(std::same_as<pack_nth_indices_t<0, pack<int, int, double, double>>, std::index_sequence<0, 2>>);
+static_assert(std::same_as<pack_nth_indices_t<1, pack<int, int, double, double>>, std::index_sequence<1, 3>>);
+static_assert(std::same_as<pack_nth_indices_t<0, pack<int, int, int, int>>, std::index_sequence<0>>);
+static_assert(std::same_as<pack_nth_indices_t<1, pack<int, int, int, int>>, std::index_sequence<1>>);
+static_assert(std::same_as<pack_nth_indices_t<2, pack<int, int, int, int>>, std::index_sequence<2>>);
+static_assert(std::same_as<pack_nth_indices_t<3, pack<int, int, int, int>>, std::index_sequence<3>>);
+static_assert(std::same_as<pack_nth_indices_t<0, pack<>>, std::index_sequence<>>);
 
 static_assert(std::same_as<pack_at_indices_t<std::index_sequence<0>, pack<int>>, pack<int>>);
 static_assert(std::same_as<pack_at_indices_t<std::index_sequence<0>, pack<int, float>>, pack<int>>);

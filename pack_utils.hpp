@@ -115,11 +115,32 @@ namespace kaixo {
     };
 
     template<std::size_t I, class Ty, class ...Tys>
-    struct pack_element<I, pack<Ty, Tys...>> : pack_element<I - 1, pack<Tys...>> {};
+    struct pack_element<I, pack<Ty, Tys...>> {
+        using type = typename pack_element<I - 1, pack<Tys...>>::type;
+    };
 
     // Ith element in Pack
     template<std::size_t I, class Pack>
     using pack_element_t = typename pack_element<I, Pack>::type;
+
+    // ------------------------------------------------
+    
+    template<std::size_t I, class Ty>
+    struct pack_indices_element;
+
+    template<std::size_t N, std::size_t ...Ns>
+    struct pack_indices_element<0, std::index_sequence<N, Ns...>> {
+        constexpr static std::size_t value = N;
+    };
+
+    template<std::size_t I, std::size_t N, std::size_t ...Ns>
+    struct pack_indices_element<I, std::index_sequence<N, Ns...>> {
+        constexpr static std::size_t value = pack_indices_element<I - 1, std::index_sequence<Ns...>>::value;
+    };
+
+    // Ith element in Indices
+    template<std::size_t I, class Indices>
+    constexpr std::size_t pack_indices_element_v = pack_indices_element<I, Indices>::value;
 
     // ------------------------------------------------
 
@@ -134,7 +155,9 @@ namespace kaixo {
     };
 
     template<class Type, class Ty, class ...Tys>
-    struct pack_contains<Type, pack<Ty, Tys...>> : pack_contains<Type, pack<Tys...>> {};
+    struct pack_contains<Type, pack<Ty, Tys...>> {
+        constexpr static bool value = pack_contains<Type, pack<Tys...>>::value;
+    };
 
     // Pack contains Type
     template<class Type, class Pack>
@@ -550,6 +573,46 @@ namespace kaixo {
     // First indices of all elements in Pack
     template<class Pack>
     using pack_first_indices_t = typename pack_first_indices<Pack>::type;
+
+    // ------------------------------------------------
+
+    template<class Pack>
+    struct pack_last_indices {
+        template<class>
+        struct _impl;
+
+        template<std::size_t ...Is>
+        struct _impl<std::index_sequence<Is...>> {
+            using _first_indices = std::index_sequence<pack_last_index_of<typename pack_element<Is, Pack>::type, Pack>::value...>;
+            using type = typename detail::remove_number_if_not_same_as_index<_first_indices>::type;
+        };
+
+        using type = typename _impl<std::make_index_sequence<pack_size<Pack>::value>>::type;
+    };
+
+    // Last indices of all elements in Pack
+    template<class Pack>
+    using pack_last_indices_t = typename pack_last_indices<Pack>::type;
+    
+    // ------------------------------------------------
+
+    template<std::size_t N, class Pack>
+    struct pack_nth_indices {
+        template<class>
+        struct _impl;
+
+        template<std::size_t ...Is>
+        struct _impl<std::index_sequence<Is...>> {
+            using _first_indices = std::index_sequence<pack_nth_index_of<typename pack_element<Is, Pack>::type, N, Pack>::value...>;
+            using type = typename detail::remove_number_if_not_same_as_index<_first_indices>::type;
+        };
+
+        using type = typename _impl<std::make_index_sequence<pack_size<Pack>::value>>::type;
+    };
+
+    // Nth indices of all elements in Pack
+    template<std::size_t N, class Pack>
+    using pack_nth_indices_t = typename pack_nth_indices<N, Pack>::type;
 
     // ------------------------------------------------
 
