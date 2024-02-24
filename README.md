@@ -747,6 +747,8 @@ constexpr decltype(auto) forward_ith(Args&& ...args) {
 
 In this example, the arguments passed to `forward_ith` are first stored in a `template_pack`, which is a wrapper for a tuple. Then you can forward a value out of that pack using `forward<I>`.
 
+
+Here is another example:
 ```cpp
 using namespace kaixo::tuples;
 using namespace kaixo::views;
@@ -754,6 +756,7 @@ using namespace kaixo::views;
 std::tuple<int, double, float, int> values{ 1, 2.0, 3.f, 4 };
 assert(values | last_unique | take_last<2> | forward<1> == 4);
 ```
+The tuple is first filtered on the last unique occurence of all the types, so this should result in `{ 2.0, 3.f, 4 }`, then the last 2 elements are taken `{ 3.f, 4 }`, and then the element at position 1 is forwarded out of the tuple, so `4` is the result. The type of the result is `int&&`, since it is forwarded out using `forward<I>`. You can also just get a reference to an element using `std::get<I>()`, in that case the result type would have been `int&`.
 
 Here are some more examples:
 
