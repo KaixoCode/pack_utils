@@ -435,5 +435,153 @@ static_assert(std::same_as<pack_sort_t<sort_on_size, pack<int>>, pack<int>>);
 static_assert(std::same_as<pack_sort_t<sort_on_size, pack<>>, pack<>>);
 
 // ------------------------------------------------
+// ------------------------------------------------
+// ------------------------------------------------
+
+using namespace kaixo::tuples;
+using namespace kaixo::views;
+
+// Check that std::get gives same cv-ref qualifiers on view as with normal tuple
+template<class Tuple>
+constexpr bool compare_get = std::same_as<
+    decltype(std::get<0>(std::declval<all_t<Tuple>>() | take<1>)),
+    decltype(std::get<0>(std::declval<Tuple>()))>;
+
+static_assert(compare_get<std::tuple<int>>);
+static_assert(compare_get<std::tuple<int&>>);
+static_assert(compare_get<std::tuple<int&&>>);
+static_assert(compare_get<std::tuple<int>&>);
+static_assert(compare_get<std::tuple<int&>&>);
+static_assert(compare_get<std::tuple<int&&>&>);
+static_assert(compare_get<std::tuple<int>&&>);
+static_assert(compare_get<std::tuple<int&>&&>);
+static_assert(compare_get<std::tuple<int&&>&&>);
+static_assert(compare_get<std::tuple<const int>>);
+static_assert(compare_get<std::tuple<const int&>>);
+static_assert(compare_get<std::tuple<const int&&>>);
+static_assert(compare_get<std::tuple<const int>&>);
+static_assert(compare_get<std::tuple<const int&>&>);
+static_assert(compare_get<std::tuple<const int&&>&>);
+static_assert(compare_get<std::tuple<const int>&&>);
+static_assert(compare_get<std::tuple<const int&>&&>);
+static_assert(compare_get<std::tuple<const int&&>&&>);
+static_assert(compare_get<const std::tuple<int>&>);
+static_assert(compare_get<const std::tuple<int&>&>);
+static_assert(compare_get<const std::tuple<int&&>&>);
+static_assert(compare_get<const std::tuple<const int>&>);
+static_assert(compare_get<const std::tuple<const int&>&>);
+static_assert(compare_get<const std::tuple<const int&&>&>);
+
+// Check forward from tuple view
+template<class Tuple>
+using forwarded = decltype(std::declval<Tuple>() | forward<0>);
+
+static_assert(std::same_as<forwarded<std::tuple<int>>, int&&>);
+static_assert(std::same_as<forwarded<std::tuple<int>&>, int&&>);
+static_assert(std::same_as<forwarded<std::tuple<int>&&>, int&&>);
+static_assert(std::same_as<forwarded<std::tuple<int&>>, int&>);
+static_assert(std::same_as<forwarded<std::tuple<int&>&>, int&>);
+static_assert(std::same_as<forwarded<std::tuple<int&>&&>, int&>);
+static_assert(std::same_as<forwarded<std::tuple<int&&>>, int&&>);
+static_assert(std::same_as<forwarded<std::tuple<int&&>&>, int&&>);
+static_assert(std::same_as<forwarded<std::tuple<int&&>&&>, int&&>);
+static_assert(std::same_as<forwarded<std::tuple<const int>>, const int&&>);
+static_assert(std::same_as<forwarded<std::tuple<const int>&>, const int&&>);
+static_assert(std::same_as<forwarded<std::tuple<const int>&&>, const int&&>);
+static_assert(std::same_as<forwarded<std::tuple<const int&>>, const int&>);
+static_assert(std::same_as<forwarded<std::tuple<const int&>&>, const int&>);
+static_assert(std::same_as<forwarded<std::tuple<const int&>&&>, const int&>);
+static_assert(std::same_as<forwarded<std::tuple<const int&&>>, const int&&>);
+static_assert(std::same_as<forwarded<std::tuple<const int&&>&>, const int&&>);
+static_assert(std::same_as<forwarded<std::tuple<const int&&>&&>, const int&&>);
+static_assert(std::same_as<forwarded<const std::tuple<int>>, const int&&>);
+static_assert(std::same_as<forwarded<const std::tuple<int>&>, const int&&>);
+static_assert(std::same_as<forwarded<const std::tuple<int>&&>, const int&&>);
+static_assert(std::same_as<forwarded<const std::tuple<int&>>, int&>);
+static_assert(std::same_as<forwarded<const std::tuple<int&>&>, int&>);
+static_assert(std::same_as<forwarded<const std::tuple<int&&>>, int&&>);
+static_assert(std::same_as<forwarded<const std::tuple<int&&>&>, int&&>);
+static_assert(std::same_as<forwarded<const std::tuple<const int>>, const int&&>);
+static_assert(std::same_as<forwarded<const std::tuple<const int>&>, const int&&>);
+static_assert(std::same_as<forwarded<const std::tuple<const int&>>, const int&>);
+static_assert(std::same_as<forwarded<const std::tuple<const int&>&>, const int&>);
+static_assert(std::same_as<forwarded<const std::tuple<const int&&>>, const int&&>);
+static_assert(std::same_as<forwarded<const std::tuple<const int&&>&>, const int&&>);
+
+// Other tests
+constexpr std::tuple<int, double, float> value{ 1, 2., 3.f };
+constexpr std::tuple<int, double, int> duple{ 1, 2., 3 };
+constexpr std::tuple<> empty{};
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop<0>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop<1>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop<3>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop<0>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_while<std::is_integral>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_while<std::is_floating_point>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_while<std::is_integral>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_until<std::is_floating_point>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_until<std::is_integral>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_until<std::is_floating_point>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take<0>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take<1>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take<3>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take<0>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_while<std::is_integral>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_while<std::is_floating_point>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_while<std::is_integral>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_until<std::is_floating_point>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_until<std::is_integral>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_until<std::is_floating_point>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last<0>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last<1>)>, pack<int, double>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last<3>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_last<0>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last_while<std::is_floating_point>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last_while<std::is_integral>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_last_while<std::is_floating_point>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last_until<std::is_integral>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last_until<std::is_floating_point>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_last_until<std::is_integral>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_last<0>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_last<1>)>, pack<float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_last<3>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_last<0>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_last_while<std::is_floating_point>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_last_while<std::is_integral>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_last_while<std::is_floating_point>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_last_until<std::is_integral>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_last_until<std::is_floating_point>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_last_until<std::is_integral>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | unique)>, pack<int, double>>);
+static_assert((duple | unique).get<0>() == 1);
+static_assert((duple | unique).get<1>() == 2.0);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | first_unique)>, pack<int, double>>);
+static_assert((duple | first_unique).get<0>() == 1);
+static_assert((duple | first_unique).get<1>() == 2.0);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | last_unique)>, pack<double, int>>);
+static_assert((duple | last_unique).get<0>() == 2.0);
+static_assert((duple | last_unique).get<1>() == 3);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | nth_unique<1>)>, pack<int>>);
+static_assert((duple | nth_unique<1>).get<0>() == 3);
+
+// ------------------------------------------------
 
 int main() {}
+
+// ------------------------------------------------

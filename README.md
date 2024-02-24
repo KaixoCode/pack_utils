@@ -1,6 +1,11 @@
 # pack utils
 
-Single header template pack utilities. Here is a list of features:
+Single header template pack utilities. Contains both helpers for dealing with type packs, as well as parameter packs.
+
+
+## Type Packs
+
+Here is a list of features for dealing with type packs:
 
 ```cpp
 // Size of Pack
@@ -199,6 +204,7 @@ pack_sub<Start, End, Pack>
 pack_sort<Sorter, Pack>
 ```
 
+### Utilities
 A `Filter` is a `template<class> class` that contains a `::value`, an example would be `std::is_integral`. 
 
 A `Transform` is a `template<class> class` that transforms the template argument, here's an example:
@@ -233,6 +239,7 @@ sorter_reverse<Sorter>
 conditional_transform<Filter, Transform>
 ```
 
+### Examples
 Here are a bunch of examples:
 
 ```cpp
@@ -672,4 +679,154 @@ static_assert(std::same_as<pack_sort_t<sort_on_size, pack<int>>, pack<int>>);
 static_assert(std::same_as<pack_sort_t<sort_on_size, pack<>>, pack<>>);
 
 // ------------------------------------------------
+```
+
+## Parameter Packs
+There are also utilities for working with parameter packs. These also work on tuples.
+
+Here is a list of features for dealing with parameter packs:
+```cpp
+// Take first I elements
+take<I>
+
+// Take last I elements
+take_last<I>
+
+// Take while Filter matches
+take_while<Filter>
+
+// Take until Filter matches
+take_until<Filter>
+
+// Take from end while Filter matches
+take_last_while<Filter>
+
+// Take from end until Filter matches
+take_last_until<Filter>
+
+// Drop first I elements
+drop<I>
+
+// Drop last I elements
+drop_last<I>
+
+// Drop while Filter matches
+drop_while<Filter>
+
+// Drop until Filter matches
+drop_until<Filter>
+
+// Drop from end while Filter matches
+drop_last_while<Filter>
+
+// Drop from end until Filter matches
+drop_last_until<Filter>
+
+// First unique occurence of each type
+unique
+
+// First unique occurence of each type
+first_unique
+
+// Last unique occurence of each type
+last_unique
+
+// Nth unique occurence of each type
+nth_unique<N>
+```
+
+### Examples
+
+Here's an example of dealing with a parameter pack and perfect forwarding:
+```cpp
+template<std::size_t I, class ...Args>
+constexpr decltype(auto) forward_ith(Args&& ...args) {
+    kaixo::template_pack<Args...> _args{ args... };
+    return _args | kaixo::views::forward<I>;
+}
+```
+
+In this example, the arguments passed to `forward_ith` are first stored in a `template_pack`, which is a wrapper for a tuple. Then you can forward a value out of that pack using `forward<I>`.
+
+Here are some more examples:
+
+```cpp
+
+// ------------------------------------------------
+
+#include "pack_utils.hpp"
+
+// ------------------------------------------------
+
+using namespace kaixo;
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop<0>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop<1>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop<3>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop<0>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_while<std::is_integral>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_while<std::is_floating_point>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_while<std::is_integral>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_until<std::is_floating_point>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_until<std::is_integral>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_until<std::is_floating_point>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take<0>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take<1>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take<3>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take<0>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_while<std::is_integral>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_while<std::is_floating_point>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_while<std::is_integral>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_until<std::is_floating_point>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_until<std::is_integral>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_until<std::is_floating_point>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last<0>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last<1>)>, pack<int, double>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last<3>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_last<0>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last_while<std::is_floating_point>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last_while<std::is_integral>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_last_while<std::is_floating_point>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last_until<std::is_integral>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | drop_last_until<std::is_floating_point>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | drop_last_until<std::is_integral>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_last<0>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_last<1>)>, pack<float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_last<3>)>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_last<0>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_last_while<std::is_floating_point>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_last_while<std::is_integral>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_last_while<std::is_floating_point>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(value | take_last_until<std::is_integral>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | take_last_until<std::is_floating_point>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | take_last_until<std::is_integral>)>, pack<>>);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | unique)>, pack<int, double>>);
+static_assert((duple | unique).get<0>() == 1);
+static_assert((duple | unique).get<1>() == 2.0);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | first_unique)>, pack<int, double>>);
+static_assert((duple | first_unique).get<0>() == 1);
+static_assert((duple | first_unique).get<1>() == 2.0);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | last_unique)>, pack<double, int>>);
+static_assert((duple | last_unique).get<0>() == 2.0);
+static_assert((duple | last_unique).get<1>() == 3);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | nth_unique<1>)>, pack<int>>);
+static_assert((duple | nth_unique<1>).get<0>() == 3);
+
+// ------------------------------------------------
+
 ```
