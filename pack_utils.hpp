@@ -95,6 +95,31 @@ namespace kaixo {
     struct pack;
 
     // ------------------------------------------------
+    
+    namespace detail {
+        template<std::size_t I>
+        struct index_as_type {
+            constexpr static std::size_t value = I;
+        };
+
+        template<class>
+        struct to_indices;
+
+        template<std::size_t ...Is>
+        struct to_indices<pack<index_as_type<Is>...>> {
+            using type = std::index_sequence<Is...>;
+        };
+
+        template<class>
+        struct indices_as_pack;
+
+        template<std::size_t ...Ns>
+        struct indices_as_pack<std::index_sequence<Ns...>> {
+            using type = pack<index_as_type<Ns>...>;
+        };
+    }
+
+    // ------------------------------------------------
 
     template<class Pack>
     struct pack_size;
@@ -129,22 +154,14 @@ namespace kaixo {
 
     // ------------------------------------------------
     
-    template<std::size_t I, class Ty>
-    struct pack_indices_element;
-
-    template<std::size_t N, std::size_t ...Ns>
-    struct pack_indices_element<0, std::index_sequence<N, Ns...>> {
-        constexpr static std::size_t value = N;
-    };
-
-    template<std::size_t I, std::size_t N, std::size_t ...Ns>
-    struct pack_indices_element<I, std::index_sequence<N, Ns...>> {
-        constexpr static std::size_t value = pack_indices_element<I - 1, std::index_sequence<Ns...>>::value;
+    template<std::size_t N, class Indices>
+    struct indices_element {
+        constexpr static std::size_t value = pack_element<N, typename detail::indices_as_pack<Indices>::type>::type::value;
     };
 
     // Ith element in Indices
     template<std::size_t I, class Indices>
-    constexpr std::size_t pack_indices_element_v = pack_indices_element<I, Indices>::value;
+    constexpr std::size_t indices_element_v = indices_element<I, Indices>::value;
 
     // ------------------------------------------------
 
@@ -1023,6 +1040,17 @@ namespace kaixo {
 
     // ------------------------------------------------
 
+    template<std::size_t I, class Indices>
+    struct indices_remove {
+        using type = typename detail::to_indices<typename pack_remove<detail::index_as_type<I>, typename detail::indices_as_pack<Indices>::type>::type>::type;
+    };
+
+    // Remove I from Indices
+    template<std::size_t I, class Indices>
+    using indices_remove_t = typename indices_remove<I, Indices>::type;
+
+    // ------------------------------------------------
+
     template<class Types, class Pack>
     struct pack_remove_all {
         using type = typename pack_erase_all<typename pack_indices_of_all<Types, Pack>::type, Pack>::type;
@@ -1031,6 +1059,17 @@ namespace kaixo {
     // Remove all Types from Pack
     template<class Types, class Pack>
     using pack_remove_all_t = typename pack_remove_all<Types, Pack>::type;
+
+    // ------------------------------------------------
+
+    template<class Is, class Indices>
+    struct indices_remove_all {
+        using type = typename detail::to_indices<typename pack_remove_all<typename detail::indices_as_pack<Is>::type, typename detail::indices_as_pack<Indices>::type>::type>::type;
+    };
+
+    // Remove all Is from Indices
+    template<class Is, class Indices>
+    using indices_remove_all_t = typename indices_remove_all<Is, Indices>::type;
 
     // ------------------------------------------------
 
@@ -1055,6 +1094,17 @@ namespace kaixo {
     // Reverse order of elements in Pack
     template<class Pack>
     using pack_reverse_t = typename pack_reverse<Pack>::type;
+
+    // ------------------------------------------------
+
+    template<class Indices>
+    struct indices_reverse {
+        using type = typename detail::to_indices<typename pack_reverse<typename detail::indices_as_pack<Indices>::type>::type>::type;
+    };
+
+    // Reverse Indices
+    template<class Indices>
+    using indices_reverse_t = typename indices_reverse<Indices>::type;
 
     // ------------------------------------------------
 
@@ -1669,8 +1719,7 @@ namespace kaixo {
                 constexpr auto operator()(Tpl&& tuple) const {
                     if constexpr (I == 0) {
                         return empty_view{};
-                    }
-                    else {
+                    } else {
                         return take_view<I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
@@ -1691,8 +1740,7 @@ namespace kaixo {
                 constexpr auto operator()(Tpl&& tuple) const {
                     if constexpr (I == 0) {
                         return empty_view{};
-                    }
-                    else {
+                    } else {
                         return drop_view<all_t<Tpl>::size - I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
@@ -1717,8 +1765,7 @@ namespace kaixo {
 
                     if constexpr (_take == 0) {
                         return empty_view{};
-                    }
-                    else {
+                    } else {
                         return take_view<_take, _view>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
@@ -1747,8 +1794,7 @@ namespace kaixo {
 
                     if constexpr (pack_size<_taken>::value == 0) {
                         return empty_view{};
-                    }
-                    else {
+                    } else {
                         return drop_view<_drop, _view>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
@@ -1773,8 +1819,7 @@ namespace kaixo {
                 constexpr auto operator()(Tpl&& tuple) const {
                     if constexpr (I == all_t<Tpl>::size) {
                         return empty_view{};
-                    }
-                    else {
+                    } else {
                         return drop_view<I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
@@ -1821,8 +1866,7 @@ namespace kaixo {
 
                     if constexpr (pack_size<_dropped>::value == 0) {
                         return empty_view{};
-                    }
-                    else {
+                    } else {
                         return drop_view<_drop, _view>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
@@ -1851,8 +1895,7 @@ namespace kaixo {
 
                     if constexpr (pack_size<_dropped>::value == 0) {
                         return empty_view{};
-                    }
-                    else {
+                    } else {
                         return take_view<_take, _view>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
@@ -1903,7 +1946,7 @@ namespace kaixo {
             template<std::size_t N, class Self>
                 requires (N < size)
             constexpr get_type_t<Self, N> get(this Self&& self) {
-                constexpr std::size_t _index = pack_indices_element<N, _indices>::value;
+                constexpr std::size_t _index = indices_element<N, _indices>::value;
                 return std::forward<Self>(self).view.template get<_index>();
             }
 
@@ -1989,11 +2032,41 @@ namespace kaixo {
             constexpr _indices_fun<typename detail::partial_first_filter_pair<pack_indices_not_filter, Filter>::type> erase_filter{};
 
             // ------------------------------------------------
+            
+            namespace detail {
+                template<class Indices>
+                struct remove_indices {
+                    template<class Pack>
+                    using type = indices_remove_all<Indices, std::make_index_sequence<pack_size<Pack>::value>>;
+                };
+            }
+
+            // Erase index I
+            template<std::size_t I>
+            constexpr _indices_fun<typename detail::remove_indices<std::index_sequence<I>>::type> erase{};
+            
+            // Erase all Indices
+            template<class Indices>
+            constexpr _indices_fun<typename detail::remove_indices<Indices>::type> erase_all{};
+
+            // ------------------------------------------------
+
+            namespace detail {
+                template<class Pack>
+                struct reverse_indices {
+                    using type = typename indices_reverse<std::make_index_sequence<pack_size<Pack>::value>>::type;
+                };
+            }
+
+            // Reverse
+            constexpr _indices_fun<typename detail::reverse_indices> reverse{};
+
+            // ------------------------------------------------
 
         }
 
         // ------------------------------------------------
-
+        
     }
 
     // ------------------------------------------------

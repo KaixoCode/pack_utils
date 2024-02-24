@@ -14,7 +14,7 @@ pack_size<Pack>
 pack_element<I, Pack>
 
 // Ith element in Indices
-pack_indices_element<I, Indices>
+indices_element<I, Indices>
 
 // Pack contains Type
 pack_contains<Type, Pack>
@@ -268,10 +268,10 @@ static_assert(std::same_as<pack_element_t<1, pack<double, int, int, int>>, int>)
 static_assert(std::same_as<pack_element_t<3, pack<double, int, int, char>>, char>);
 static_assert(std::same_as<pack_element_t<0, pack<double>>, double>);
 
-static_assert(pack_indices_element_v<0, std::index_sequence<0, 1, 2, 3>> == 0);
-static_assert(pack_indices_element_v<1, std::index_sequence<0, 1, 2, 3>> == 1);
-static_assert(pack_indices_element_v<3, std::index_sequence<0, 1, 2, 3>> == 3);
-static_assert(pack_indices_element_v<0, std::index_sequence<0>> == 0);
+static_assert(indices_element_v<0, std::index_sequence<0, 1, 2, 3>> == 0);
+static_assert(indices_element_v<1, std::index_sequence<0, 1, 2, 3>> == 1);
+static_assert(indices_element_v<3, std::index_sequence<0, 1, 2, 3>> == 3);
+static_assert(indices_element_v<0, std::index_sequence<0>> == 0);
 
 static_assert(pack_contains_v<int, pack<double, int, float>>);
 static_assert(!pack_contains_v<char, pack<double, int, float>>);
