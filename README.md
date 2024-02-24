@@ -233,7 +233,6 @@ conditional_transform<Filter, Transform>
 Here are a bunch of examples:
 
 ```cpp
-
 // ------------------------------------------------
 
 #include "pack_utils.hpp"
@@ -416,6 +415,8 @@ static_assert(std::same_as<pack_nth_indices_t<1, pack<int, int, int, int>>, std:
 static_assert(std::same_as<pack_nth_indices_t<2, pack<int, int, int, int>>, std::index_sequence<2>>);
 static_assert(std::same_as<pack_nth_indices_t<3, pack<int, int, int, int>>, std::index_sequence<3>>);
 static_assert(std::same_as<pack_nth_indices_t<0, pack<>>, std::index_sequence<>>);
+static_assert(std::same_as<pack_nth_indices_t<1, pack<int, double, int, float>>, std::index_sequence<2>>);
+static_assert(std::same_as<pack_nth_indices_t<2, pack<int, double, int, float>>, std::index_sequence<>>);
 
 static_assert(std::same_as<pack_at_indices_t<std::index_sequence<0>, pack<int>>, pack<int>>);
 static_assert(std::same_as<pack_at_indices_t<std::index_sequence<0>, pack<int, float>>, pack<int>>);
