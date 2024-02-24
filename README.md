@@ -1,7 +1,6 @@
 # pack utils
 
-Single header template pack utilities. Contains both helpers for dealing with type packs, as well as parameter packs.
-
+Single header template pack utilities. Contains both helpers for dealing with [type packs](#type-packs), as well as [parameter packs](#parameter-packs).
 
 ## Type Packs
 
@@ -747,6 +746,14 @@ constexpr decltype(auto) forward_ith(Args&& ...args) {
 ```
 
 In this example, the arguments passed to `forward_ith` are first stored in a `template_pack`, which is a wrapper for a tuple. Then you can forward a value out of that pack using `forward<I>`.
+
+```cpp
+using namespace kaixo::tuples;
+using namespace kaixo::views;
+
+std::tuple<int, double, float, int> values{ 1, 2.0, 3.f, 4 };
+assert(values | last_unique | take_last<2> | forward<1> == 4);
+```
 
 Here are some more examples:
 
