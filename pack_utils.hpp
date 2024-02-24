@@ -1117,6 +1117,17 @@ namespace kaixo {
     // Replace Type in Pack with Replacement
     template<class Type, class Replacement, class Pack>
     using pack_replace_t = typename pack_replace<Type, Replacement, Pack>::type;
+    
+    // ------------------------------------------------
+
+    template<class Types, class Replacement, class Pack>
+    struct pack_replace_all {
+        using type = typename pack_swap_all<Replacement, typename pack_indices_of_all<Types, Pack>::type, Pack>::type;
+    };
+
+    // Replace all Types in Pack with Replacement
+    template<class Types, class Replacement, class Pack>
+    using pack_replace_all_t = typename pack_replace_all<Types, Replacement, Pack>::type;
 
     // ------------------------------------------------
 

@@ -391,6 +391,16 @@ static_assert(std::same_as<pack_replace_t<int, char, pack<int, int, double>>, pa
 static_assert(std::same_as<pack_replace_t<int, char, pack<int, int, int>>, pack<char, char, char>>);
 static_assert(std::same_as<pack_replace_t<int, char, pack<>>, pack<>>);
 
+static_assert(std::same_as<pack_replace_all_t<pack<int>, char, pack<float, char, double>>, pack<float, char, double>>);
+static_assert(std::same_as<pack_replace_all_t<pack<int>, char, pack<float, int, double>>, pack<float, char, double>>);
+static_assert(std::same_as<pack_replace_all_t<pack<int>, char, pack<int, int, double>>, pack<char, char, double>>);
+static_assert(std::same_as<pack_replace_all_t<pack<int>, char, pack<int, int, int>>, pack<char, char, char>>);
+static_assert(std::same_as<pack_replace_all_t<pack<int>, char, pack<>>, pack<>>);
+static_assert(std::same_as<pack_replace_all_t<pack<int, float>, char, pack<float, int, int>>, pack<char, char, char>>);
+static_assert(std::same_as<pack_replace_all_t<pack<int, float>, char, pack<float, int, double>>, pack<char, char, double>>);
+static_assert(std::same_as<pack_replace_all_t<pack<>, char, pack<float, int, double>>, pack<float, int, double>>);
+static_assert(std::same_as<pack_replace_all_t<pack<>, char, pack<>>, pack<>>);
+
 static_assert(std::same_as<pack_replace_filter_t<std::is_integral, char, pack<float, float, double>>, pack<float, float, double>>);
 static_assert(std::same_as<pack_replace_filter_t<std::is_integral, char, pack<float, char, double>>, pack<float, char, double>>);
 static_assert(std::same_as<pack_replace_filter_t<std::is_integral, char, pack<float, int, double>>, pack<float, char, double>>);
