@@ -611,6 +611,26 @@ static_assert((duple | nth_unique<1>).get<0>() == 3);
 static_assert(std::same_as<as_pack_t<decltype(duple | remove<int>)>, pack<double>>);
 static_assert((duple | remove<int>).get<0>() == 2.0);
 
+static_assert(std::same_as<as_pack_t<decltype(duple | remove_all<pack<int, double>>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(duple | remove_all<pack<int>>)>, pack<double>>);
+static_assert((duple | remove_all<pack<int>>).get<0>() == 2.0);
+static_assert(std::same_as<as_pack_t<decltype(duple | remove_all<pack<>>)>, pack<int, double, int>>);
+static_assert((duple | remove_all<pack<>>).get<0>() == 1);
+static_assert((duple | remove_all<pack<>>).get<1>() == 2.0);
+static_assert((duple | remove_all<pack<>>).get<2>() == 3);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | filter<std::is_integral>)>, pack<int, int>>);
+static_assert((duple | filter<std::is_integral>).get<0>() == 1);
+static_assert((duple | filter<std::is_integral>).get<1>() == 3);
+static_assert(std::same_as<as_pack_t<decltype(duple | filter<std::is_floating_point>)>, pack<double>>);
+static_assert((duple | filter<std::is_floating_point>).get<0>() == 2.0);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | erase_filter<std::is_floating_point>)>, pack<int, int>>);
+static_assert((duple | erase_filter<std::is_floating_point>).get<0>() == 1);
+static_assert((duple | erase_filter<std::is_floating_point>).get<1>() == 3);
+static_assert(std::same_as<as_pack_t<decltype(duple | erase_filter<std::is_integral>)>, pack<double>>);
+static_assert((duple | erase_filter<std::is_integral>).get<0>() == 2.0);
+
 // ------------------------------------------------
 
 int main() {}
