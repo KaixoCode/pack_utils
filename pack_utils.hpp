@@ -1984,9 +1984,9 @@ namespace kaixo {
             template<template<class> class Filter>
             constexpr _indices_fun<typename detail::partial_first_filter_pair<pack_indices_filter, Filter>::type> filter{};
             
-            // Only keep all that match Filter
+            // Erase all that match Filter
             template<template<class> class Filter>
-            constexpr _indices_fun<typename detail::partial_first_filter_pair<pack_indices_filter, Filter>::type> filter{};
+            constexpr _indices_fun<typename detail::partial_first_filter_pair<pack_indices_not_filter, Filter>::type> erase_filter{};
 
             // ------------------------------------------------
 
