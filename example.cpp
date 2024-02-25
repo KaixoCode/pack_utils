@@ -1249,6 +1249,21 @@ static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue>()
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue&>().get<0>()), const long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue&&>().get<0>()), const long&&>);
 
+static_assert(std::same_as<as_pack_t<decltype(concat(duple, value))>, pack<int, double, int, int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(value, duple))>, pack<int, double, float, int, double, int>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(value, empty))>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(empty, value))>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(duple, empty))>, pack<int, double, int>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(empty, duple))>, pack<int, double, int>>);
+static_assert(concat(duple, value).get<0>() == 1);
+static_assert(concat(duple, value).get<1>() == 2.0);
+static_assert(concat(duple, value).get<2>() == 3);
+static_assert(concat(duple, value).get<3>() == 1);
+static_assert(concat(duple, value).get<4>() == 2.0);
+static_assert(concat(duple, value).get<5>() == 3.f);
+static_assert(concat(empty, value).get<0>() == 1);
+static_assert(concat(value, empty).get<0>() == 1);
+
 // ------------------------------------------------
 
 int main() {}

@@ -790,6 +790,9 @@ append
 
 // Prepend
 prepend
+
+// Concat 2 tuples
+concat
 ```
 
 ### Examples
@@ -950,6 +953,21 @@ static_assert((duple | append(4)).get<3>() == 4);
 static_assert((duple | append(single)).get<3>() == single);
 static_assert((empty | append(4, 5, 6)).get<2>() == 6);
 static_assert((empty | append(4, single, 6)).get<1>() == single);
+
+static_assert(std::same_as<as_pack_t<decltype(concat(duple, value))>, pack<int, double, int, int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(value, duple))>, pack<int, double, float, int, double, int>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(value, empty))>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(empty, value))>, pack<int, double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(duple, empty))>, pack<int, double, int>>);
+static_assert(std::same_as<as_pack_t<decltype(concat(empty, duple))>, pack<int, double, int>>);
+static_assert(concat(duple, value).get<0>() == 1);
+static_assert(concat(duple, value).get<1>() == 2.0);
+static_assert(concat(duple, value).get<2>() == 3);
+static_assert(concat(duple, value).get<3>() == 1);
+static_assert(concat(duple, value).get<4>() == 2.0);
+static_assert(concat(duple, value).get<5>() == 3.f);
+static_assert(concat(empty, value).get<0>() == 1);
+static_assert(concat(value, empty).get<0>() == 1);
 
 // ------------------------------------------------
 

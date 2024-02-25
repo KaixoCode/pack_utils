@@ -1400,20 +1400,15 @@ namespace kaixo {
         template<view Self, std::size_t I>
         struct get_type {
             using _element = typename std::decay_t<Self>::template element<I>;
-            constexpr static bool _el_value = !std::is_reference_v<_element>;
-            constexpr static bool _el_rvalue = std::is_rvalue_reference_v<_element>;
-            constexpr static bool _el_lvalue = std::is_lvalue_reference_v<_element>;
             constexpr static bool _self_value = !std::is_reference_v<Self>;
             constexpr static bool _self_rvalue = std::is_rvalue_reference_v<Self>;
-            constexpr static bool _self_lvalue = std::is_lvalue_reference_v<Self>;
             constexpr static bool _self_const = std::is_const_v<std::remove_reference_t<Self>>;
             constexpr static bool _owner = detail::_owner_view<std::decay_t<Self>, I>;
             constexpr static bool _const = detail::_const_view<std::decay_t<Self>, I>;
             constexpr static bool _rvalue = _owner ? _self_value || _self_rvalue : false;
-            constexpr static bool _lvalue = true;
             constexpr static bool _add_const = _const || (_self_const && _owner);
             using _type = std::conditional_t<_add_const, const _element, _element>;
-            using type = std::conditional_t<_rvalue, _type&&, std::conditional_t<_lvalue, _type&, _type>>;
+            using type = std::conditional_t<_rvalue, _type&&, _type&>;
         };
 
         // Return-type of get<I> for Self
@@ -1425,12 +1420,8 @@ namespace kaixo {
         template<view Self, std::size_t I>
         struct forward_type {
             using _element = typename std::decay_t<Self>::template element<I>;
-            constexpr static bool _el_value = !std::is_reference_v<_element>;
             constexpr static bool _el_rvalue = std::is_rvalue_reference_v<_element>;
             constexpr static bool _el_lvalue = std::is_lvalue_reference_v<_element>;
-            constexpr static bool _self_value = !std::is_reference_v<Self>;
-            constexpr static bool _self_rvalue = std::is_rvalue_reference_v<Self>;
-            constexpr static bool _self_lvalue = std::is_lvalue_reference_v<Self>;
             constexpr static bool _self_const = std::is_const_v<std::remove_reference_t<Self>>;
             constexpr static bool _owner = detail::_owner_view<std::decay_t<Self>, I>;
             constexpr static bool _const = detail::_const_view<std::decay_t<Self>, I>;
@@ -1482,12 +1473,6 @@ namespace std {
 
     template<std::size_t I, kaixo::tuples::view Ty>
     struct tuple_element<I, Ty> : type_identity<typename Ty::template element<I>> {};
-    
-    template<std::size_t I, kaixo::tuples::view Ty>
-    struct tuple_element<I, Ty&> : type_identity<typename Ty::template element<I>> {};
-    
-    template<std::size_t I, kaixo::tuples::view Ty>
-    struct tuple_element<I, Ty&&> : type_identity<typename Ty::template element<I>> {};
     
     // ------------------------------------------------
 
@@ -2243,7 +2228,106 @@ namespace kaixo {
         }
 
         // ------------------------------------------------
+    
+        template<view A, view B>
+        struct concat_view : view_interface<concat_view<A, B>> {
+
+            // ------------------------------------------------
+
+            A a;
+            B b;
+
+            // ------------------------------------------------
+
+            template<std::size_t I>
+            constexpr static bool is_const = I < A::size 
+                                           ? A::template is_const<I> 
+                                           : B::template is_const<I - A::size>;
         
+            template<std::size_t I>
+            constexpr static bool is_reference = I < A::size 
+                                               ? A::template is_reference<I> 
+                                               : B::template is_reference<I - A::size>;
+
+            constexpr static std::size_t size = A::size + B::size;
+
+            // ------------------------------------------------
+
+            template<std::size_t N>
+            struct _impl;
+        
+            template<std::size_t N>
+                requires (N < A::size)
+            struct _impl<N> {
+                using type = typename A::template element<N>;
+            };
+        
+            template<std::size_t N>
+                requires (N >= A::size)
+            struct _impl<N> {
+                using type = typename B::template element<N - A::size>;
+            };
+
+            template<std::size_t N>
+                requires (N < size) 
+            using element = typename _impl<N>::type;
+
+            // ------------------------------------------------
+        
+            template<std::size_t N, class Self>
+                requires (N < size)
+            constexpr get_type_t<Self, N> get(this Self&& self) {
+                if constexpr (N < A::size) {
+                    return std::forward<Self>(self).a.template get<N>();
+                } else {
+                    return std::forward<Self>(self).b.template get<N - A::size>();
+                }
+            }
+
+            // ------------------------------------------------
+
+        };
+
+        namespace views {
+
+            struct _concat_fun : pipe_interface<_concat_fun> {
+
+                template<tuple_like A, tuple_like B>
+                constexpr auto operator()(A&& a, B&& b) const {
+                    if constexpr (all_t<A>::size == 0 && all_t<B>::size == 0) {
+                        return empty_view{};
+                    } else if constexpr (all_t<A>::size == 0) {
+                        return all(std::forward<B>(b));
+                    } else if constexpr (all_t<B>::size == 0) {
+                        return all(std::forward<A>(a));
+                    } else {
+                        return concat_view<all_t<A>, all_t<B>>{
+                            .a = std::forward<A>(a),
+                            .b = std::forward<B>(b),
+                        };
+                    }
+                }
+                
+                template<tuple_like A>
+                constexpr auto operator()(A&& a) const {
+                    if constexpr (all_t<A>::size == 0) {
+                        return empty_view{};
+                    } else {
+                        return detail::_capture_closure<_concat_fun, all_t<A>>{
+                            .captures = std::forward_as_tuple(all(std::forward<A>(a))),
+                        };
+                    }
+                }
+
+            };
+
+            // Concat
+            constexpr _concat_fun concat{};
+
+        }
+
+        // ------------------------------------------------
+
     }
 
     // ------------------------------------------------
