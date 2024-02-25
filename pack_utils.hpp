@@ -1840,8 +1840,7 @@ namespace kaixo {
                 constexpr auto operator()(Tpl&& tuple) const {
                     if constexpr (I == all_t<Tpl>::size) {
                         return empty_view{};
-                    }
-                    else {
+                    } else {
                         return take_view<all_t<Tpl>::size - I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
@@ -1965,7 +1964,7 @@ namespace kaixo {
 
                 template<tuple_like Tpl>
                 constexpr auto operator()(Tpl&& tuple) const {
-                    if constexpr (std::tuple_size_v<std::decay_t<Tpl>> == 0) {
+                    if constexpr (indices_view<all_t<Tpl>, Indices>::size == 0) {
                         return empty_view{};
                     } else {
                         return indices_view<all_t<Tpl>, Indices>{.view = all(std::forward<Tpl>(tuple)) };
