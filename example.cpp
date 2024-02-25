@@ -469,6 +469,13 @@ static_assert(std::same_as<pack_sort_t<sort_on_size, pack<>>, pack<>>);
 using namespace kaixo::tuples;
 using namespace kaixo::views;
 
+constexpr auto aioneefae1 = std::tuple_size_v<std::tuple<int>>;
+constexpr auto aioneefae2 = std::tuple_size_v<std::tuple<int&>>;
+constexpr auto aioneefae3 = std::tuple_size_v<std::tuple<int&&>>;
+constexpr auto aioneefae4 = std::tuple_size_v<std::tuple<const int>>;
+constexpr auto aioneefae5 = std::tuple_size_v<std::tuple<const int&>>;
+constexpr auto aioneefae6 = std::tuple_size_v<std::tuple<const int&&>>;
+
 // Check that std::get gives same cv-ref qualifiers on view as with normal tuple
 template<class Tuple>
 constexpr bool compare_get = std::same_as<
@@ -500,41 +507,524 @@ static_assert(compare_get<const std::tuple<const int>&>);
 static_assert(compare_get<const std::tuple<const int&>&>);
 static_assert(compare_get<const std::tuple<const int&&>&>);
 
-// Check forward from tuple view
-template<class Tuple>
-using forwarded = decltype(std::declval<Tuple>() | forward<0>);
 
-static_assert(std::same_as<forwarded<std::tuple<int>>, int&&>);
-static_assert(std::same_as<forwarded<std::tuple<int>&>, int&&>);
-static_assert(std::same_as<forwarded<std::tuple<int>&&>, int&&>);
-static_assert(std::same_as<forwarded<std::tuple<int&>>, int&>);
-static_assert(std::same_as<forwarded<std::tuple<int&>&>, int&>);
-static_assert(std::same_as<forwarded<std::tuple<int&>&&>, int&>);
-static_assert(std::same_as<forwarded<std::tuple<int&&>>, int&&>);
-static_assert(std::same_as<forwarded<std::tuple<int&&>&>, int&&>);
-static_assert(std::same_as<forwarded<std::tuple<int&&>&&>, int&&>);
-static_assert(std::same_as<forwarded<std::tuple<const int>>, const int&&>);
-static_assert(std::same_as<forwarded<std::tuple<const int>&>, const int&&>);
-static_assert(std::same_as<forwarded<std::tuple<const int>&&>, const int&&>);
-static_assert(std::same_as<forwarded<std::tuple<const int&>>, const int&>);
-static_assert(std::same_as<forwarded<std::tuple<const int&>&>, const int&>);
-static_assert(std::same_as<forwarded<std::tuple<const int&>&&>, const int&>);
-static_assert(std::same_as<forwarded<std::tuple<const int&&>>, const int&&>);
-static_assert(std::same_as<forwarded<std::tuple<const int&&>&>, const int&&>);
-static_assert(std::same_as<forwarded<std::tuple<const int&&>&&>, const int&&>);
-static_assert(std::same_as<forwarded<const std::tuple<int>>, const int&&>);
-static_assert(std::same_as<forwarded<const std::tuple<int>&>, const int&&>);
-static_assert(std::same_as<forwarded<const std::tuple<int>&&>, const int&&>);
-static_assert(std::same_as<forwarded<const std::tuple<int&>>, int&>);
-static_assert(std::same_as<forwarded<const std::tuple<int&>&>, int&>);
-static_assert(std::same_as<forwarded<const std::tuple<int&&>>, int&&>);
-static_assert(std::same_as<forwarded<const std::tuple<int&&>&>, int&&>);
-static_assert(std::same_as<forwarded<const std::tuple<const int>>, const int&&>);
-static_assert(std::same_as<forwarded<const std::tuple<const int>&>, const int&&>);
-static_assert(std::same_as<forwarded<const std::tuple<const int&>>, const int&>);
-static_assert(std::same_as<forwarded<const std::tuple<const int&>&>, const int&>);
-static_assert(std::same_as<forwarded<const std::tuple<const int&&>>, const int&&>);
-static_assert(std::same_as<forwarded<const std::tuple<const int&&>&>, const int&&>);
+// Check that both get and forward give the expected qualifiers
+// the parts that are commented out are invalid because the tuple contains an rvalue
+// which would have to be copied. And that is not possible.
+
+
+// get
+
+
+// value is value
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>>>().template get<0>()), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>>&&>().template get<0>()), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>>&&>().template get<0>()), const int&&>);
+
+// const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>>>().template get<0>()), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>>&&>().template get<0>()), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>>&&>().template get<0>()), const int&&>);
+
+// ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>&>&&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>&>&&>().template get<0>()), int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&>&&>().template get<0>()), const int&>);
+
+// copied const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&&>>().template get<0>()), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&&>&&>().template get<0>()), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&&>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&&>&&>().template get<0>()), const int&&>);
+
+// value is const value
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>>&&>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>>&&>().template get<0>()), const int&&>);
+
+// const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>>&&>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>>&&>().template get<0>()), const int&&>);
+
+// ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>&>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>&>&&>().template get<0>()), const int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&>&&>().template get<0>()), const int&>);
+
+// copied const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&&>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&&>&&>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&&>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&&>&&>().template get<0>()), const int&&>);
+
+// value is reference
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>>&&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>>&&>().template get<0>()), int&>);
+
+// const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>>&&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>>&&>().template get<0>()), int&>);
+
+// Ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>&>&&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>&>&&>().template get<0>()), int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&>&&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&>&&>().template get<0>()), int&>);
+
+// copied const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&&>&&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&&>&&>().template get<0>()), int&>);
+
+// value is rvalue reference
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>>>().template get<0>()), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>>&&>().template get<0>()), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>>>().template get<0>()), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>>&&>().template get<0>()), int&&>);
+
+// const owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>>>().template get<0>()), int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>>&>().template get<0>()), int&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>>&&>().template get<0>()), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>>>().template get<0>()), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>>&>().template get<0>()), int&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>>&&>().template get<0>()), int&&>);
+
+// Ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>&>&&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>&>&&>().template get<0>()), int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&>&&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&>>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&>&>().template get<0>()), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&>&&>().template get<0>()), int&>);
+
+// copied const owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&&>>().template get<0>()), int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&&>&>().template get<0>()), int&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&&>&&>().template get<0>()), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&&>>().template get<0>()), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&&>&>().template get<0>()), int&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&&>&&>().template get<0>()), int&&>);
+
+// value is const reference
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>>&&>().template get<0>()), const int&>);
+
+// const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>>&&>().template get<0>()), const int&>);
+
+// Ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>&>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>&>&&>().template get<0>()), const int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&>&&>().template get<0>()), const int&>);
+
+// copied const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&&>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&&>&&>().template get<0>()), const int&>);
+
+// value is const rvalue reference
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>>&&>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>>>().template get<0>()), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>>&&>().template get<0>()), const int&&>);
+
+// const owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>>>().template get<0>()), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>>&>().template get<0>()), const int&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>>&&>().template get<0>()), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>>>().template get<0>()), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>>&>().template get<0>()), const int&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>>&&>().template get<0>()), const int&&>);
+
+// Ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>&>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>&>&&>().template get<0>()), const int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&>&&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&>>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&>&>().template get<0>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&>&&>().template get<0>()), const int&>);
+
+// copied const owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&&>>().template get<0>()), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&&>&>().template get<0>()), const int&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&&>&&>().template get<0>()), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&&>>().template get<0>()), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&&>&>().template get<0>()), const int&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&&>&&>().template get<0>()), const int&&>);
+
+
+// forwarding
+
+
+// value is value
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>>>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>>&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>>&&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>>&&>() | forward<0>), const int&&>);
+
+// const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>>>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>>&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>>&&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>>&&>() | forward<0>), const int&&>);
+
+// ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>&>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>&>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int>&>&&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>&>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>&>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int>&>&&>() | forward<0>), int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&>&&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&>&&>() | forward<0>), const int&>);
+
+// copied const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&&>>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&&>&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int>&&>&&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&&>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&&>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int>&&>&&>() | forward<0>), const int&&>);
+
+// value is const value
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>>&&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>>&&>() | forward<0>), const int&&>);
+
+// const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>>&&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>>&&>() | forward<0>), const int&&>);
+
+// ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int>&>&&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int>&>&&>() | forward<0>), const int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&>&&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&>&&>() | forward<0>), const int&>);
+
+// copied const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&&>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&&>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int>&&>&&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&&>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&&>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int>&&>&&>() | forward<0>), const int&&>);
+
+// value is reference
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>>&&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>>&&>() | forward<0>), int&>);
+
+// const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>>&&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>>&&>() | forward<0>), int&>);
+
+// Ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>&>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>&>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&>&>&&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>&>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>&>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&>&>&&>() | forward<0>), int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&>&&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&>&&>() | forward<0>), int&>);
+
+// copied const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&&>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&&>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&>&&>&&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&&>>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&&>&>() | forward<0>), int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&>&&>&&>() | forward<0>), int&>);
+
+// value is rvalue reference
+
+// owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>>>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>>&>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>>&&>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>>>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>>&>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>>&&>() | forward<0>), int&&>);
+
+// const owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>>>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>>&>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>>&&>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>>>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>>&>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>>&&>() | forward<0>), int&&>);
+
+// Ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>&>>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>&>&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<int&&>&>&&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>&>>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>&>&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<int&&>&>&&>() | forward<0>), int&&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&>>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&>&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&>&&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&>>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&>&>() | forward<0>), int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&>&&>() | forward<0>), int&&>);
+
+// copied const owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&&>>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&&>&>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<int&&>&&>&&>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&&>>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&&>&>() | forward<0>), int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<int&&>&&>&&>() | forward<0>), int&&>);
+
+// value is const reference
+
+// owning view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>>&&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>>&&>() | forward<0>), const int&>);
+
+// const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>>&&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>>&&>() | forward<0>), const int&>);
+
+// Ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&>&>&&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&>&>&&>() | forward<0>), const int&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&>&&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&>&&>() | forward<0>), const int&>);
+
+// copied const owning view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&>&&>&&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&&>>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&&>&>() | forward<0>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&>&&>&&>() | forward<0>), const int&>);
+
+// value is const rvalue reference
+
+// owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>>>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>>&>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>>&&>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>>>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>>&>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>>&&>() | forward<0>), const int&&>);
+
+// const owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>>>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>>&>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>>&&>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>>>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>>&>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>>&&>() | forward<0>), const int&&>);
+
+// Ref view
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>&>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>&>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<std::tuple<const int&&>&>&&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>&>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>&>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<std::tuple<const int&&>&>&&>() | forward<0>), const int&&>);
+
+// const ref view
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&>&&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&>>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&>&>() | forward<0>), const int&&>);
+static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&>&&>() | forward<0>), const int&&>);
+
+// copied const owning view
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&&>>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&&>&>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<all_t<const std::tuple<const int&&>&&>&&>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&&>>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&&>&>() | forward<0>), const int&&>);
+//static_assert(std::same_as<decltype(std::declval<const all_t<const std::tuple<const int&&>&&>&&>() | forward<0>), const int&&>);
+
+
 
 // Other tests
 constexpr std::tuple<int, double, float> value{ 1, 2., 3.f };
@@ -671,71 +1161,92 @@ static_assert((duple | append(single)).get<3>() == single);
 static_assert((empty | append(4, 5, 6)).get<2>() == 6);
 static_assert((empty | append(4, single, 6)).get<1>() == single);
 
-using inserted_tuple_value = decltype(empty | insert<0>(std::declval<long>()));
-using inserted_tuple_rvalue = decltype(empty | insert<0>(std::declval<long&&>()));
-using inserted_tuple_lvalue = decltype(empty | insert<0>(std::declval<long&>()));
-using inserted_tuple_clvalue = decltype(empty | insert<0>(std::declval<const long&>()));
-using inserted_tuple_crvalue = decltype(empty | insert<0>(std::declval<const long&&>()));
+// Check whether inserted values also give correct expected qualifiers
+
+using inserted_tuple_value = decltype(duple | insert<0>(std::declval<long>()));
+static_assert(std::same_as<inserted_tuple_value::element<0>, long>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_value>() | forward<0>), long&&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&>() | forward<0>), long&&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&&>() | forward<0>), long&&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value>() | forward<0>), const long&&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&>() | forward<0>), const long&&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&&>() | forward<0>), const long&&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_value>().get<0>()), long&&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&>().get<0>()), long&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&&>().get<0>()), long&&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value>().get<0>()), const long&&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&>().get<0>()), const long&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&&>().get<0>()), const long&&>);
+
+// Check that original values still work as well
+std::tuple_element_t<1, inserted_tuple_value>;
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_value>() | forward<1>), const int&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&>() | forward<1>), const int&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&&>() | forward<1>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value>() | forward<1>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&>() | forward<1>), const int&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&&>() | forward<1>), const int&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_value>().get<1>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&>().get<1>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&&>().get<1>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value>().get<1>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&>().get<1>()), const int&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&&>().get<1>()), const int&>);
+
+using inserted_tuple_rvalue = decltype(duple | insert<0>(std::declval<long&&>()));
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_rvalue>() | forward<0>), long&&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_rvalue&>() | forward<0>), long&&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_rvalue&&>() | forward<0>), long&&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_rvalue>() | forward<0>), const long&&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_rvalue&>() | forward<0>), const long&&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_rvalue&&>() | forward<0>), const long&&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_rvalue>().get<0>()), long&&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_rvalue&>().get<0>()), long&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_rvalue&&>().get<0>()), long&&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_rvalue>().get<0>()), const long&&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_rvalue&>().get<0>()), const long&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_rvalue&&>().get<0>()), const long&&>);
+
+using inserted_tuple_lvalue = decltype(duple | insert<0>(std::declval<long&>()));
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_lvalue>() | forward<0>), long&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_lvalue&>() | forward<0>), long&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_lvalue&&>() | forward<0>), long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_lvalue>() | forward<0>), long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_lvalue&>() | forward<0>), long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_lvalue&&>() | forward<0>), long&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_clvalue>() | forward<0>), const long&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_clvalue&>() | forward<0>), const long&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_clvalue&&>() | forward<0>), const long&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_clvalue>() | forward<0>), const long&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_clvalue&>() | forward<0>), const long&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_clvalue&&>() | forward<0>), const long&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue>() | forward<0>), const long&&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue&>() | forward<0>), const long&&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue&&>() | forward<0>), const long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue>() | forward<0>), const long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue&>() | forward<0>), const long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue&&>() | forward<0>), const long&&>);
-
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_value>().get<0>()), long&&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&>().get<0>()), long&&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&&>().get<0>()), long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value>().get<0>()), const long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&>().get<0>()), const long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&&>().get<0>()), const long&&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_rvalue>().get<0>()), long&&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_rvalue&>().get<0>()), long&&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_rvalue&&>().get<0>()), long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_rvalue>().get<0>()), const long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_rvalue&>().get<0>()), const long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_rvalue&&>().get<0>()), const long&&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_lvalue>().get<0>()), long&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_lvalue&>().get<0>()), long&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_lvalue&&>().get<0>()), long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_lvalue>().get<0>()), long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_lvalue&>().get<0>()), long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_lvalue&&>().get<0>()), long&>);
+
+using inserted_tuple_clvalue = decltype(duple | insert<0>(std::declval<const long&>()));
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_clvalue>() | forward<0>), const long&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_clvalue&>() | forward<0>), const long&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_clvalue&&>() | forward<0>), const long&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_clvalue>() | forward<0>), const long&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_clvalue&>() | forward<0>), const long&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_clvalue&&>() | forward<0>), const long&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_clvalue>().get<0>()), const long&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_clvalue&>().get<0>()), const long&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_clvalue&&>().get<0>()), const long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_clvalue>().get<0>()), const long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_clvalue&>().get<0>()), const long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_clvalue&&>().get<0>()), const long&>);
+
+using inserted_tuple_crvalue = decltype(duple | insert<0>(std::declval<const long&&>()));
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue>() | forward<0>), const long&&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue&>() | forward<0>), const long&&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue&&>() | forward<0>), const long&&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue>() | forward<0>), const long&&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue&>() | forward<0>), const long&&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue&&>() | forward<0>), const long&&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue>().get<0>()), const long&&>);
-static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue&>().get<0>()), const long&&>);
+static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue&>().get<0>()), const long&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_crvalue&&>().get<0>()), const long&&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue>().get<0>()), const long&&>);
-static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue&>().get<0>()), const long&&>);
+static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue&>().get<0>()), const long&>);
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_crvalue&&>().get<0>()), const long&&>);
 
 // ------------------------------------------------

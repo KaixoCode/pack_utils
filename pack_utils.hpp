@@ -1421,7 +1421,7 @@ namespace kaixo {
         concept pipe = std::derived_from<std::decay_t<Ty>, pipe_interface<std::decay_t<Ty>>>;
 
         template<class Pipe, class Type>
-        concept pipe_for = pipe<Pipe> && std::invocable<Pipe, Type>;
+        concept pipe_for = pipe<Pipe> && std::invocable<Pipe, Type&&>;
 
         // ------------------------------------------------
 
@@ -1437,26 +1437,55 @@ namespace kaixo {
             return std::forward<Ty>(val)(std::forward<T>(tuple));
         }
         
-        template<tuple_like T, pipe_for<T> Ty>
-        constexpr decltype(auto) operator|(T& tuple, Ty&& val) {
-            return std::forward<Ty>(val)(tuple);
-        }
-
         // ------------------------------------------------
 
         template<view Self, std::size_t I>
         struct get_type {
+            using _element = typename std::decay_t<Self>::template element<I>;
+            constexpr static bool _el_value = !std::is_reference_v<_element>;
+            constexpr static bool _el_rvalue = std::is_rvalue_reference_v<_element>;
+            constexpr static bool _el_lvalue = std::is_lvalue_reference_v<_element>;
+            constexpr static bool _self_value = !std::is_reference_v<Self>;
+            constexpr static bool _self_rvalue = std::is_rvalue_reference_v<Self>;
+            constexpr static bool _self_lvalue = std::is_lvalue_reference_v<Self>;
             constexpr static bool _self_const = std::is_const_v<std::remove_reference_t<Self>>;
             constexpr static bool _owner = detail::_owner_view<std::decay_t<Self>, I>;
-            constexpr static bool _add_const = detail::_const_view<std::decay_t<Self>, I> || (_self_const && _owner);
-            using _element = typename std::decay_t<Self>::template element<I>;
-            using _const = std::conditional_t<_add_const, const _element, _element>;
-            using type = std::conditional_t<_owner, _const&&, _const&>;
+            constexpr static bool _const = detail::_const_view<std::decay_t<Self>, I>;
+            constexpr static bool _rvalue = _owner ? _self_value || _self_rvalue : false;
+            constexpr static bool _lvalue = true;
+            constexpr static bool _add_const = _const || (_self_const && _owner);
+            using _type = std::conditional_t<_add_const, const _element, _element>;
+            using type = std::conditional_t<_rvalue, _type&&, std::conditional_t<_lvalue, _type&, _type>>;
         };
 
         // Return-type of get<I> for Self
         template<view Self, std::size_t I>
         using get_type_t = typename get_type<Self, I>::type;
+        
+        // ------------------------------------------------
+
+        template<view Self, std::size_t I>
+        struct forward_type {
+            using _element = typename std::decay_t<Self>::template element<I>;
+            constexpr static bool _el_value = !std::is_reference_v<_element>;
+            constexpr static bool _el_rvalue = std::is_rvalue_reference_v<_element>;
+            constexpr static bool _el_lvalue = std::is_lvalue_reference_v<_element>;
+            constexpr static bool _self_value = !std::is_reference_v<Self>;
+            constexpr static bool _self_rvalue = std::is_rvalue_reference_v<Self>;
+            constexpr static bool _self_lvalue = std::is_lvalue_reference_v<Self>;
+            constexpr static bool _self_const = std::is_const_v<std::remove_reference_t<Self>>;
+            constexpr static bool _owner = detail::_owner_view<std::decay_t<Self>, I>;
+            constexpr static bool _const = detail::_const_view<std::decay_t<Self>, I>;
+            constexpr static bool _rvalue = _owner ? true : _el_rvalue;
+            constexpr static bool _lvalue = _owner ? _el_lvalue : true;
+            constexpr static bool _add_const = _owner ? _self_const : _const;
+            using _type = std::conditional_t<_add_const, const _element, _element>;
+            using type = std::conditional_t<_rvalue, _type&&, std::conditional_t<_lvalue, _type&, _type>>;
+        };
+
+        // Return-type of forward<I> for Self
+        template<view Self, std::size_t I>
+        using forward_type_t = typename forward_type<Self, I>::type;
 
         // ------------------------------------------------
 
@@ -1670,16 +1699,16 @@ namespace kaixo {
             template<std::size_t I>
             struct _forward_fun : pipe_interface<_forward_fun<I>> {
 
-                template<tuple_like Tpl>
-                    requires (I <= std::tuple_size_v<std::decay_t<Tpl>>)
-                constexpr std::tuple_element_t<I, Tpl>&& operator()(Tpl& tuple) const {
-                    return static_cast<std::tuple_element_t<I, Tpl>&&>(std::get<I>(tuple));
+                template<view View>
+                    requires (I <= std::decay_t<View>::size)
+                constexpr forward_type_t<View, I> operator()(View&& view) const {
+                    return static_cast<forward_type_t<View, I>>(std::forward<View>(view).template get<I>());
                 }
                 
                 template<tuple_like Tpl>
-                    requires (I <= std::tuple_size_v<std::decay_t<Tpl>>)
-                constexpr std::tuple_element_t<I, Tpl>&& operator()(Tpl&& tuple) const {
-                    return static_cast<std::tuple_element_t<I, Tpl>&&>(std::get<I>(std::forward<Tpl>(tuple)));
+                    requires (I <= all_t<Tpl>::size && !view<Tpl>)
+                constexpr forward_type_t<all_t<Tpl>, I> operator()(Tpl&& tuple) const {
+                    return static_cast<forward_type_t<all_t<Tpl>, I>>(std::get<I>(std::forward<Tpl>(tuple)));
                 }
                 
             };
