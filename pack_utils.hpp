@@ -1366,53 +1366,11 @@ namespace kaixo {
         // ------------------------------------------------
 
         namespace detail {
-            template<class Ty>
-            concept _index_dependent_lookup = requires() {
-                { Ty::template is_const<0> } -> std::convertible_to<bool>;
-                { Ty::template is_reference<0> } -> std::convertible_to<bool>;
-            };
-
-            template<class Ty>
-            concept _not_index_dependent_lookup = requires() {
-                { Ty::is_const } -> std::convertible_to<bool>;
-                { Ty::is_reference } -> std::convertible_to<bool>;
-            };
+            template<class Ty, std::size_t I>
+            concept _owner_view = view<Ty> && !Ty::template is_reference<I>;
 
             template<class Ty, std::size_t I>
-            struct _owner_view_impl;
-
-            template<class Ty, std::size_t I>
-                requires _not_index_dependent_lookup<Ty>
-            struct _owner_view_impl<Ty, I> {
-                constexpr static bool value = !Ty::is_reference;
-            };
-            
-            template<class Ty, std::size_t I>
-                requires _index_dependent_lookup<Ty>
-            struct _owner_view_impl<Ty, I> {
-                constexpr static bool value = !Ty::template is_reference<I>;
-            };
-
-            template<class Ty, std::size_t I>
-            concept _owner_view = view<Ty> && _owner_view_impl<Ty, I>::value;
-
-            template<class Ty, std::size_t I>
-            struct _const_view_impl;
-            
-            template<class Ty, std::size_t I>
-                requires _not_index_dependent_lookup<Ty>
-            struct _const_view_impl<Ty, I> {
-                constexpr static bool value = Ty::is_const;
-            };
-
-            template<class Ty, std::size_t I>
-                requires _index_dependent_lookup<Ty>
-            struct _const_view_impl<Ty, I> {
-                constexpr static bool value = Ty::template is_const<I>;
-            };
-
-            template<class Ty, std::size_t I>
-            concept _const_view = view<Ty> && _const_view_impl<Ty, I>::value;
+            concept _const_view = view<Ty> && Ty::template is_const<I>;
         }
 
         // ------------------------------------------------
@@ -1573,8 +1531,12 @@ namespace kaixo {
 
             // ------------------------------------------------
 
+            template<std::size_t>
             constexpr static bool is_const = std::is_const_v<Tpl>;
+
+            template<std::size_t>
             constexpr static bool is_reference = true;
+
             constexpr static std::size_t size = std::tuple_size_v<Tpl>;
 
             // ------------------------------------------------
@@ -1617,8 +1579,12 @@ namespace kaixo {
 
             // ------------------------------------------------
 
+            template<std::size_t>
             constexpr static bool is_const = std::is_const_v<Tpl>;
+
+            template<std::size_t>
             constexpr static bool is_reference = false;
+
             constexpr static std::size_t size = std::tuple_size_v<Tpl>;
 
             // ------------------------------------------------
@@ -1650,8 +1616,12 @@ namespace kaixo {
 
             // ------------------------------------------------
 
+            template<std::size_t>
             constexpr static bool is_const = false;
+
+            template<std::size_t>
             constexpr static bool is_reference = false;
+
             constexpr static std::size_t size = 0;
 
             // ------------------------------------------------
@@ -1732,8 +1702,12 @@ namespace kaixo {
 
             // ------------------------------------------------
 
-            constexpr static bool is_const = View::is_const;
-            constexpr static bool is_reference = View::is_reference;
+            template<std::size_t N>
+            constexpr static bool is_const = View::template is_const<N + A>;
+
+            template<std::size_t N>
+            constexpr static bool is_reference = View::template is_reference<N + A>;
+
             constexpr static std::size_t size = B - A;
 
             // ------------------------------------------------
@@ -2000,8 +1974,12 @@ namespace kaixo {
 
             // ------------------------------------------------
 
-            constexpr static bool is_const = View::is_const;
-            constexpr static bool is_reference = View::is_reference;
+            template<std::size_t N>
+            constexpr static bool is_const = View::template is_const<indices_element<N, _indices>::value>;
+
+            template<std::size_t N>
+            constexpr static bool is_reference = View::template is_reference<indices_element<N, _indices>::value>;
+
             constexpr static std::size_t size = pack_size<_at_indices>::value;
 
             // ------------------------------------------------
@@ -2167,14 +2145,14 @@ namespace kaixo {
             // ------------------------------------------------
 
             template<std::size_t N>
-            constexpr static bool is_const = N < I                             ? View::is_const 
+            constexpr static bool is_const = N < I                             ? View::template is_const<N>
                                            : N >= I && N < I + sizeof...(Args) ? false 
-                                           :                                     View::is_const;
+                                           :                                     View::template is_const<N - sizeof...(Args)>;
             
             template<std::size_t N>
-            constexpr static bool is_reference = N < I                             ? View::is_reference 
+            constexpr static bool is_reference = N < I                             ? View::template is_reference<N>
                                                : N >= I && N < I + sizeof...(Args) ? false 
-                                               :                                     View::is_reference;
+                                               :                                     View::template is_reference<N - sizeof...(Args)>;
 
             constexpr static std::size_t size = View::size + sizeof...(Args);
 
