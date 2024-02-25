@@ -1359,19 +1359,47 @@ namespace kaixo {
         // ------------------------------------------------
 
         template<class Ty>
-        concept view = std::derived_from<std::decay_t<Ty>, view_interface<std::decay_t<Ty>>>&& requires() {
-            { std::decay_t<Ty>::is_const } -> std::convertible_to<bool>;
-            { std::decay_t<Ty>::is_reference } -> std::convertible_to<bool>;
+        concept view = std::derived_from<std::decay_t<Ty>, view_interface<std::decay_t<Ty>>> && requires() {
             { std::decay_t<Ty>::size } -> std::convertible_to<std::size_t>;
         };
 
         // ------------------------------------------------
 
-        template<class Ty>
-        concept owner_view = view<Ty> && !Ty::is_reference;
+        namespace detail {
+            template<class Ty>
+            concept _index_dependent_lookup = requires() {
+                { Ty::template is_const<0> } -> std::convertible_to<bool>;
+                { Ty::template is_reference<0> } -> std::convertible_to<bool>;
+            };
 
-        template<class Ty>
-        concept const_view = view<Ty> && Ty::is_const;
+            template<class Ty, std::size_t I>
+            struct _owner_view_impl {
+                constexpr static bool value = !Ty::is_reference;
+            };
+            
+            template<class Ty, std::size_t I>
+                requires _index_dependent_lookup<Ty>
+            struct _owner_view_impl<Ty, I> {
+                constexpr static bool value = !Ty::template is_reference<I>;
+            };
+
+            template<class Ty, std::size_t I>
+            concept _owner_view = view<Ty> && _owner_view_impl<Ty, I>::value;
+
+            template<class Ty, std::size_t I>
+            struct _const_view_impl {
+                constexpr static bool value = Ty::is_const;
+            };
+
+            template<class Ty, std::size_t I>
+                requires _index_dependent_lookup<Ty>
+            struct _const_view_impl<Ty, I> {
+                constexpr static bool value = Ty::template is_const<I>;
+            };
+
+            template<class Ty, std::size_t I>
+            concept _const_view = view<Ty> && _const_view_impl<Ty, I>::value;
+        }
 
         // ------------------------------------------------
 
@@ -1385,10 +1413,7 @@ namespace kaixo {
 
         template<class Ty>
         concept tuple_like = requires() {
-            std::tuple_size_v<std::decay_t<Ty>> == 0; // Either empty 
-        } || requires(Ty val) {
-            { std::tuple_size_v<std::decay_t<Ty>> };  // Or some size + std::get overload
-            { std::get<0>(val) } -> std::convertible_to<std::tuple_element_t<0, std::decay_t<Ty>>>;
+            typename std::tuple_size<std::decay_t<Ty>>::type;
         };
 
         // ------------------------------------------------
@@ -1403,8 +1428,8 @@ namespace kaixo {
         template<view Self, std::size_t I>
         struct get_type {
             using _element = typename std::decay_t<Self>::template element<I>;
-            using _const = std::conditional_t<const_view<Self>, const _element, _element>;
-            using type = std::conditional_t<owner_view<Self>, _const&&, _const&>;
+            using _const = std::conditional_t<detail::_const_view<Self, I>, const _element, _element>;
+            using type = std::conditional_t<detail::_owner_view<Self, I>, _const&&, _const&>;
         };
 
         // Return-type of get<I> for Self
@@ -1641,8 +1666,8 @@ namespace kaixo {
 
         // ------------------------------------------------
 
-        template<std::size_t I, view View>
-        struct take_view : view_interface<take_view<I, View>> {
+        template<std::size_t A, std::size_t B, view View>
+        struct sub_view : view_interface<sub_view<A, B, View>> {
 
             // ------------------------------------------------
 
@@ -1652,53 +1677,20 @@ namespace kaixo {
 
             constexpr static bool is_const = View::is_const;
             constexpr static bool is_reference = View::is_reference;
-            constexpr static std::size_t size = I;
-
-            // ------------------------------------------------
-
-            template<std::size_t I>
-                requires (I < size)
-            using element = typename View::template element<I>;
-
-            // ------------------------------------------------
-
-            template<std::size_t N, class Self>
-                requires (N < size)
-            constexpr get_type_t<Self, N> get(this Self&& self) {
-                return std::forward<Self>(self).view.template get<N>();
-            }
-
-            // ------------------------------------------------
-
-        };
-
-        // ------------------------------------------------
-
-        template<std::size_t I, view View>
-        struct drop_view : view_interface<drop_view<I, View>> {
-
-            // ------------------------------------------------
-
-            View view;
-
-            // ------------------------------------------------
-
-            constexpr static bool is_const = View::is_const;
-            constexpr static bool is_reference = View::is_reference;
-            constexpr static std::size_t size = View::size - I;
+            constexpr static std::size_t size = B - A;
 
             // ------------------------------------------------
 
             template<std::size_t N>
                 requires (N < size)
-            using element = typename View::template element<N + I>;
+            using element = typename View::template element<N + A>;
 
             // ------------------------------------------------
 
             template<std::size_t N, class Self>
                 requires (N < size)
             constexpr get_type_t<Self, N> get(this Self&& self) {
-                return std::forward<Self>(self).view.template get<N + I>();
+                return std::forward<Self>(self).view.template get<N + A>();
             }
 
             // ------------------------------------------------
@@ -1720,7 +1712,7 @@ namespace kaixo {
                     if constexpr (I == 0) {
                         return empty_view{};
                     } else {
-                        return take_view<I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
+                        return sub_view<0, I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
 
@@ -1741,7 +1733,7 @@ namespace kaixo {
                     if constexpr (I == 0) {
                         return empty_view{};
                     } else {
-                        return drop_view<all_t<Tpl>::size - I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
+                        return sub_view<all_t<Tpl>::size - I, all_t<Tpl>::size, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
 
@@ -1766,7 +1758,7 @@ namespace kaixo {
                     if constexpr (_take == 0) {
                         return empty_view{};
                     } else {
-                        return take_view<_take, _view>{.view = all(std::forward<Tpl>(tuple)) };
+                        return sub_view<0, _take, _view>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
 
@@ -1790,12 +1782,12 @@ namespace kaixo {
                     using _view = all_t<Tpl>;
                     using _pack = typename as_pack<_view>::type;
                     using _taken = typename Take<Filter, _pack>::type;
-                    constexpr std::size_t _drop = pack_size<_pack>::value - pack_size<_taken>::value;
+                    constexpr std::size_t _drop = _view::size - pack_size<_taken>::value;
 
                     if constexpr (pack_size<_taken>::value == 0) {
                         return empty_view{};
                     } else {
-                        return drop_view<_drop, _view>{.view = all(std::forward<Tpl>(tuple)) };
+                        return sub_view<_drop, _view::size, _view>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
 
@@ -1820,7 +1812,7 @@ namespace kaixo {
                     if constexpr (I == all_t<Tpl>::size) {
                         return empty_view{};
                     } else {
-                        return drop_view<I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
+                        return sub_view<I, all_t<Tpl>::size, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
 
@@ -1841,7 +1833,7 @@ namespace kaixo {
                     if constexpr (I == all_t<Tpl>::size) {
                         return empty_view{};
                     } else {
-                        return take_view<all_t<Tpl>::size - I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
+                        return sub_view<0, all_t<Tpl>::size - I, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
 
@@ -1866,7 +1858,7 @@ namespace kaixo {
                     if constexpr (pack_size<_dropped>::value == 0) {
                         return empty_view{};
                     } else {
-                        return drop_view<_drop, _view>{.view = all(std::forward<Tpl>(tuple)) };
+                        return sub_view<_drop, _view::size, _view>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
 
@@ -1895,7 +1887,7 @@ namespace kaixo {
                     if constexpr (pack_size<_dropped>::value == 0) {
                         return empty_view{};
                     } else {
-                        return take_view<_take, _view>{.view = all(std::forward<Tpl>(tuple)) };
+                        return sub_view<0, _take, _view>{.view = all(std::forward<Tpl>(tuple)) };
                     }
                 }
 
@@ -1908,6 +1900,27 @@ namespace kaixo {
             // Drop from end until Filter matches
             template<template<class> class Filter>
             constexpr _drop_last_filter_fun<Filter, pack_drop_last_until> drop_last_until{};
+
+            // ------------------------------------------------
+            
+            template<std::size_t A, std::size_t B>
+                requires (A <= B)
+            struct _sub_fun : pipe_interface<_sub_fun<A, B>> {
+
+                template<tuple_like Tpl>
+                    requires (B <= all_t<Tpl>::size)
+                constexpr auto operator()(Tpl&& tuple) const {
+                    if constexpr (A == B) {
+                        return empty_view{};
+                    } else {
+                        return sub_view<A, B, all_t<Tpl>>{.view = all(std::forward<Tpl>(tuple)) };
+                    }
+                }
+
+            };
+
+            template<std::size_t A, std::size_t B>
+            constexpr _sub_fun<A, B> sub{};
 
             // ------------------------------------------------
 
@@ -2061,6 +2074,135 @@ namespace kaixo {
             constexpr _indices_fun<typename detail::reverse_indices> reverse{};
 
             // ------------------------------------------------
+
+        }
+
+        // ------------------------------------------------
+        
+        namespace views::detail {
+
+            template<class Fun, class ...Args>
+            struct _capture_closure : pipe_interface<_capture_closure<Fun, Args...>> {
+
+                std::tuple<Args...> captures;
+
+                template<tuple_like Tpl>
+                constexpr auto operator()(Tpl&& tuple) const {
+                    return std::apply(Fun{}, 
+                        std::tuple_cat(std::forward_as_tuple(std::forward<Tpl>(tuple)), std::move(captures)));
+                }
+
+            };
+
+        }
+
+        // ------------------------------------------------
+        
+        template<view View, std::size_t I, class ...Args>
+        struct insert_view : view_interface<insert_view<View, I, Args...>> {
+
+            // ------------------------------------------------
+
+            View view;
+            std::tuple<Args...> captures;
+
+            // ------------------------------------------------
+
+            template<std::size_t N>
+            constexpr static bool is_const = N < I                             ? View::is_const 
+                                           : N >= I && N < I + sizeof...(Args) ? false 
+                                           :                                     View::is_const;
+            
+            template<std::size_t N>
+            constexpr static bool is_reference = N < I                             ? View::is_reference 
+                                               : N >= I && N < I + sizeof...(Args) ? false 
+                                               :                                     View::is_reference;
+
+            constexpr static std::size_t size = View::size + sizeof...(Args);
+
+            // ------------------------------------------------
+
+            template<std::size_t N>
+            struct _impl;
+            
+            template<std::size_t N>
+                requires (N < I)
+            struct _impl<N> {
+                using type = typename View::template element<N>;
+            };
+            
+            template<std::size_t N>
+                requires (N >= I && N < I + sizeof...(Args))
+            struct _impl<N> {
+                using type = typename pack_element<N - I, pack<Args...>>::type;
+            };
+
+            template<std::size_t N>
+                requires (N >= I + sizeof...(Args))
+            struct _impl<N> {
+                using type = typename View::template element<N - sizeof...(Args)>;
+            };
+
+            template<std::size_t N>
+                requires (N < size)
+            using element = typename _impl<N>::type;
+
+            // ------------------------------------------------
+
+            template<std::size_t N, class Self>
+                requires (N < size)
+            constexpr get_type_t<Self, N> get(this Self&& self) {
+                if constexpr (N < I) {
+                    return std::forward<Self>(self).view.template get<N>();
+                } else if constexpr (N >= I && N < I + sizeof...(Args)) {
+                    return std::get<N - I>(std::forward<Self>(self).captures);
+                } else {
+                    return std::forward<Self>(self).view.template get<N - sizeof...(Args)>();
+                }
+            }
+
+            // ------------------------------------------------
+
+        };
+
+        namespace views {
+
+            template<std::size_t I>
+            struct _insert_fun : pipe_interface<_insert_fun<I>> {
+
+                template<class ...Args>
+                constexpr auto operator()(Args&& ...args) const {
+                    return detail::_capture_closure<_insert_fun<I>, Args...>{
+                        .captures = std::forward_as_tuple(std::forward<Args>(args)...) 
+                    };
+                }
+                
+                template<tuple_like Tpl, class ...Args>
+                constexpr auto operator()(Tpl&& tuple, Args&& ...args) const {
+                    if constexpr (all_t<Tpl>::size == 0 && sizeof...(Args) == 0) {
+                        return empty_view{};
+                    } else if constexpr (sizeof...(Args) == 0) {
+                        return all(std::forward<Tpl>(tuple));
+                    } else {
+                        constexpr std::size_t _index = I == npos ? all_t<Tpl>::size : I;
+                        return insert_view<all_t<Tpl>, _index, Args...>{
+                            .view = all(std::forward<Tpl>(tuple)),
+                            .captures = std::forward_as_tuple(std::forward<Args>(args)...),
+                        };
+                    }
+                }
+
+            };
+
+            // Insert at index I
+            template<std::size_t I>
+            constexpr _insert_fun<I> insert{};
+
+            // Append
+            constexpr _insert_fun<npos> append{};
+           
+            // Prepend
+            constexpr _insert_fun<0> prepend{};
 
         }
 

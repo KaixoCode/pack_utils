@@ -781,6 +781,15 @@ filter<Filter>
 
 // Erase all that match Filter
 erase_filter<Filter>
+
+// Insert at index I
+insert<I>
+
+// Append
+append
+
+// Prepend
+prepend
 ```
 
 ### Examples

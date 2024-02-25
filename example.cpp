@@ -593,6 +593,13 @@ static_assert(std::same_as<as_pack_t<decltype(value | take_last_until<std::is_in
 static_assert(std::same_as<as_pack_t<decltype(value | take_last_until<std::is_floating_point>)>, pack<>>);
 static_assert(std::same_as<as_pack_t<decltype(empty | take_last_until<std::is_integral>)>, pack<>>);
 
+static_assert(std::same_as<as_pack_t<decltype(value | sub<1, 3>)>, pack<double, float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | sub<0, 1>)>, pack<int>>);
+static_assert(std::same_as<as_pack_t<decltype(value | sub<2, 3>)>, pack<float>>);
+static_assert(std::same_as<as_pack_t<decltype(value | sub<2, 2>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(value | sub<0, 0>)>, pack<>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | sub<0, 0>)>, pack<>>);
+
 static_assert(std::same_as<as_pack_t<decltype(duple | unique)>, pack<int, double>>);
 static_assert((duple | unique).get<0>() == 1);
 static_assert((duple | unique).get<1>() == 2.0);
