@@ -1372,8 +1372,18 @@ namespace kaixo {
                 { Ty::template is_reference<0> } -> std::convertible_to<bool>;
             };
 
+            template<class Ty>
+            concept _not_index_dependent_lookup = requires() {
+                { Ty::is_const } -> std::convertible_to<bool>;
+                { Ty::is_reference } -> std::convertible_to<bool>;
+            };
+
             template<class Ty, std::size_t I>
-            struct _owner_view_impl {
+            struct _owner_view_impl;
+
+            template<class Ty, std::size_t I>
+                requires _not_index_dependent_lookup<Ty>
+            struct _owner_view_impl<Ty, I> {
                 constexpr static bool value = !Ty::is_reference;
             };
             
@@ -1387,7 +1397,11 @@ namespace kaixo {
             concept _owner_view = view<Ty> && _owner_view_impl<Ty, I>::value;
 
             template<class Ty, std::size_t I>
-            struct _const_view_impl {
+            struct _const_view_impl;
+            
+            template<class Ty, std::size_t I>
+                requires _not_index_dependent_lookup<Ty>
+            struct _const_view_impl<Ty, I> {
                 constexpr static bool value = Ty::is_const;
             };
 
@@ -1422,14 +1436,22 @@ namespace kaixo {
         constexpr decltype(auto) operator|(T&& tuple, Ty&& val) {
             return std::forward<Ty>(val)(std::forward<T>(tuple));
         }
+        
+        template<tuple_like T, pipe_for<T> Ty>
+        constexpr decltype(auto) operator|(T& tuple, Ty&& val) {
+            return std::forward<Ty>(val)(tuple);
+        }
 
         // ------------------------------------------------
 
         template<view Self, std::size_t I>
         struct get_type {
+            constexpr static bool _self_const = std::is_const_v<std::remove_reference_t<Self>>;
+            constexpr static bool _owner = detail::_owner_view<std::decay_t<Self>, I>;
+            constexpr static bool _add_const = detail::_const_view<std::decay_t<Self>, I> || (_self_const && _owner);
             using _element = typename std::decay_t<Self>::template element<I>;
-            using _const = std::conditional_t<detail::_const_view<Self, I>, const _element, _element>;
-            using type = std::conditional_t<detail::_owner_view<Self, I>, _const&&, _const&>;
+            using _const = std::conditional_t<_add_const, const _element, _element>;
+            using type = std::conditional_t<_owner, _const&&, _const&>;
         };
 
         // Return-type of get<I> for Self
@@ -1473,7 +1495,13 @@ namespace std {
 
     template<std::size_t I, kaixo::tuples::view Ty>
     struct tuple_element<I, Ty> : type_identity<typename Ty::template element<I>> {};
-
+    
+    template<std::size_t I, kaixo::tuples::view Ty>
+    struct tuple_element<I, Ty&> : type_identity<typename Ty::template element<I>> {};
+    
+    template<std::size_t I, kaixo::tuples::view Ty>
+    struct tuple_element<I, Ty&&> : type_identity<typename Ty::template element<I>> {};
+    
     // ------------------------------------------------
 
     template<std::size_t I, kaixo::tuples::view Ty>
@@ -1647,13 +1675,13 @@ namespace kaixo {
                 constexpr std::tuple_element_t<I, Tpl>&& operator()(Tpl& tuple) const {
                     return static_cast<std::tuple_element_t<I, Tpl>&&>(std::get<I>(tuple));
                 }
-
+                
                 template<tuple_like Tpl>
                     requires (I <= std::tuple_size_v<std::decay_t<Tpl>>)
                 constexpr std::tuple_element_t<I, Tpl>&& operator()(Tpl&& tuple) const {
                     return static_cast<std::tuple_element_t<I, Tpl>&&>(std::get<I>(std::forward<Tpl>(tuple)));
                 }
-
+                
             };
 
             // Perfect forward the Ith element
@@ -2087,6 +2115,7 @@ namespace kaixo {
                 std::tuple<Args...> captures;
 
                 template<tuple_like Tpl>
+                    requires std::invocable<Fun, Tpl&&, Args&&...>
                 constexpr auto operator()(Tpl&& tuple) const {
                     return std::apply(Fun{}, 
                         std::tuple_cat(std::forward_as_tuple(std::forward<Tpl>(tuple)), std::move(captures)));
@@ -2155,7 +2184,7 @@ namespace kaixo {
                 if constexpr (N < I) {
                     return std::forward<Self>(self).view.template get<N>();
                 } else if constexpr (N >= I && N < I + sizeof...(Args)) {
-                    return std::get<N - I>(std::forward<Self>(self).captures);
+                    return static_cast<get_type_t<Self, N>>(std::get<N - I>(std::forward<Self>(self).captures));
                 } else {
                     return std::forward<Self>(self).view.template get<N - sizeof...(Args)>();
                 }
@@ -2179,12 +2208,12 @@ namespace kaixo {
                 
                 template<tuple_like Tpl, class ...Args>
                 constexpr auto operator()(Tpl&& tuple, Args&& ...args) const {
+                    constexpr std::size_t _index = I == npos ? all_t<Tpl>::size : I;
                     if constexpr (all_t<Tpl>::size == 0 && sizeof...(Args) == 0) {
                         return empty_view{};
                     } else if constexpr (sizeof...(Args) == 0) {
                         return all(std::forward<Tpl>(tuple));
-                    } else {
-                        constexpr std::size_t _index = I == npos ? all_t<Tpl>::size : I;
+                    } else if constexpr (_index <= all_t<Tpl>::size) {
                         return insert_view<all_t<Tpl>, _index, Args...>{
                             .view = all(std::forward<Tpl>(tuple)),
                             .captures = std::forward_as_tuple(std::forward<Args>(args)...),

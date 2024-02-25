@@ -918,6 +918,39 @@ static_assert((duple | erase_filter<std::is_floating_point>).get<1>() == 3);
 static_assert(std::same_as<as_pack_t<decltype(duple | erase_filter<std::is_integral>)>, pack<double>>);
 static_assert((duple | erase_filter<std::is_integral>).get<0>() == 2.0);
 
+constexpr long single = 10;
+
+static_assert(std::same_as<as_pack_t<decltype(duple | insert<0>(1.f, single))>, pack<float, const long&, int, double, int>>);
+static_assert(std::same_as<as_pack_t<decltype(duple | insert<1>(single, 2.f))>, pack<int, const long&, float, double, int>>);
+static_assert(std::same_as<as_pack_t<decltype(duple | insert<3>(1.f, single))>, pack<int, double, int, float, const long&>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | insert<0>(single, 2.f))>, pack<const long&, float>>);
+static_assert((duple | insert<0>(4)).get<0>() == 4);
+static_assert((duple | insert<1>(4)).get<1>() == 4);
+static_assert((duple | insert<2>(4)).get<2>() == 4);
+static_assert((duple | insert<3>(4)).get<3>() == 4);
+static_assert((duple | insert<0>(single)).get<0>() == single);
+static_assert((duple | insert<1>(single)).get<1>() == single);
+static_assert((duple | insert<2>(single)).get<2>() == single);
+static_assert((duple | insert<3>(single)).get<3>() == single);
+static_assert((empty | insert<0>(4, 5, 6)).get<2>() == 6);
+static_assert((empty | insert<0>(4, single, 6)).get<1>() == single);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | prepend(single, 2.f))>, pack<const long&, float, int, double, int>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | prepend(1.f, single))>, pack<float, const long&>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | prepend(single))>, pack<const long&>>);
+static_assert((duple | prepend(4)).get<0>() == 4);
+static_assert((duple | prepend(single)).get<0>() == single);
+static_assert((empty | prepend(4, 5, 6)).get<2>() == 6);
+static_assert((empty | prepend(4, single, 6)).get<1>() == single);
+
+static_assert(std::same_as<as_pack_t<decltype(duple | append(single, 2.f))>, pack<int, double, int, const long&, float>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | append(1.f, single))>, pack<float, const long&>>);
+static_assert(std::same_as<as_pack_t<decltype(empty | append(single))>, pack<const long&>>);
+static_assert((duple | append(4)).get<3>() == 4);
+static_assert((duple | append(single)).get<3>() == single);
+static_assert((empty | append(4, 5, 6)).get<2>() == 6);
+static_assert((empty | append(4, single, 6)).get<1>() == single);
+
 // ------------------------------------------------
 
 ```
