@@ -2324,6 +2324,56 @@ namespace kaixo {
             // Concat
             constexpr _concat_fun concat{};
 
+            // ------------------------------------------------
+
+            struct _call_fun : pipe_interface<_call_fun> {
+
+                template<tuple_like Tpl, class Lambda, std::size_t ...Is>
+                constexpr auto _impl(Tpl&& tuple, Lambda&& lambda, std::index_sequence<Is...>) const {
+                    return std::forward<Lambda>(lambda)(std::get<Is>(std::forward<Tpl>(tuple))...);
+                }
+
+                template<tuple_like Tpl, class Lambda>
+                constexpr auto operator()(Tpl&& tuple, Lambda&& lambda) const {
+                    return _impl(std::forward<Tpl>(tuple), std::forward<Lambda>(lambda), 
+                        std::make_index_sequence<std::tuple_size_v<std::decay_t<Tpl>>>{});
+                }
+                
+                template<class Lambda>
+                constexpr auto operator()(Lambda&& lambda) const {
+                    return detail::_capture_closure<_call_fun, Lambda>{
+                        .captures = std::forward_as_tuple(std::forward<Lambda>(lambda))
+                    };
+                }
+
+            };
+
+            constexpr _call_fun call{};
+
+            // ------------------------------------------------
+
+            template<class Op>
+            struct _fold_fun : pipe_interface<_fold_fun<Op>> {
+
+                template<std::size_t I, tuple_like Tpl>
+                constexpr auto _impl(Tpl&& tuple) const {
+                    if constexpr (I == std::tuple_size_v<std::decay_t<Tpl>> - 1) {
+                        return std::get<I>(std::forward<Tpl>(tuple));
+                    } else {
+                        return Op{}(std::get<I>(std::forward<Tpl>(tuple)), _impl<I + 1>(std::forward<Tpl>(tuple)));
+                    }
+                }
+
+                template<tuple_like Tpl>
+                constexpr auto operator()(Tpl&& tuple) const {
+                    return _impl<0>(std::forward<Tpl>(tuple));
+                }
+
+            };
+
+            template<class Op>
+            constexpr _fold_fun<Op> fold{};
+
         }
 
         // ------------------------------------------------
