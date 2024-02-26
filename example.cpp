@@ -1179,7 +1179,6 @@ static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&>().
 static_assert(std::same_as<decltype(std::declval<const inserted_tuple_value&&>().get<0>()), const long&&>);
 
 // Check that original values still work as well
-std::tuple_element_t<1, inserted_tuple_value>;
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_value>() | forward<1>), const int&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&>() | forward<1>), const int&>);
 static_assert(std::same_as<decltype(std::declval<inserted_tuple_value&&>() | forward<1>), const int&>);
