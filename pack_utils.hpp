@@ -9,7 +9,7 @@
 #include <concepts>
 #include <utility>
 #include <tuple>
-#include <version>
+#include <memory>
 
 // ------------------------------------------------
 
@@ -2375,6 +2375,100 @@ namespace kaixo {
             constexpr _fold_fun<Op> fold{};
 
         }
+
+        // ------------------------------------------------
+        
+        namespace detail {
+
+            // ------------------------------------------------
+
+            template<tuple_like Tpl>
+            struct tuple_view_tuple { // Interface for retrieving tuple
+                constexpr virtual Tpl& _tuple() const = 0;
+            };
+
+            template<class Ty, std::size_t, class = void>
+            struct tuple_view_get { // Interface for element in tuple_view
+                constexpr virtual Ty& _get() const = 0;
+            };
+
+            template<class Ty, std::size_t I, tuple_like Tpl>
+            struct tuple_view_get<Ty, I, Tpl> : virtual tuple_view_get<Ty, I>, // Base class for element I
+                                                virtual tuple_view_tuple<Tpl>  // interface for getting tuple
+            {   // Implementation for element I in Tpl, uses virtual inheritance
+                constexpr Ty& _get() const override { return std::get<I>(this->_tuple()); }
+            };
+
+            // ------------------------------------------------
+
+            template<class Pack, class Ty = void, class Indices = std::make_index_sequence<pack_size<Pack>::value>>
+            struct tuple_view_get_pack; // Inherits 'get' for all elements in Pack
+
+            template<class ...Tys, class Ty, std::size_t ...Is>
+            struct tuple_view_get_pack<pack<Tys...>, Ty, std::index_sequence<Is...>> 
+                : virtual tuple_view_get<Tys, Is, Ty>... {};
+
+            // ------------------------------------------------
+
+            template<class Pack, class = void> // Base class, where no Tpl defined
+            struct tuple_view_impl : tuple_view_get_pack<Pack> {};
+
+            template<class Pack, tuple_like Tpl> // Implementation for base class
+            struct tuple_view_impl<Pack, Tpl> : tuple_view_impl<Pack>,         // <<< Inherits base (for dynamic cast)
+                                                tuple_view_get_pack<Pack, Tpl> // <<< implements base
+            {   // Can't be constexpr because virtual base classes
+                /*constexpr*/ tuple_view_impl(Tpl&& tpl)
+                    : tuple(std::forward<Tpl>(tpl)) 
+                {}
+
+                Tpl&& tuple;
+
+                constexpr Tpl& _tuple() const override { return tuple; } // <<< Implement virtual interface for tuple
+            };
+
+            // ------------------------------------------------
+
+        }
+
+        // ------------------------------------------------
+
+        template<class ...Tys>
+        struct tuple_view : view_interface<tuple_view<Tys...>> {
+
+            // ------------------------------------------------
+
+            using _pack = pack<Tys...>;
+
+            // ------------------------------------------------
+
+            constexpr static std::size_t size = sizeof...(Tys);
+
+            template<std::size_t I>
+            using element = typename pack_element<I, _pack>::type;
+
+            // ------------------------------------------------
+
+            template<tuple_like Tpl>
+                requires std::same_as<_pack, typename as_pack<views::all_t<Tpl>>::type>
+            constexpr tuple_view(Tpl&& tuple)
+                : m_Ptr(std::make_shared<detail::tuple_view_impl<_pack, Tpl>>(std::forward<Tpl>(tuple)))
+            {}
+
+            // ------------------------------------------------
+
+            template<std::size_t I>
+            constexpr pack_element<I, _pack>::type& get() const {
+                return dynamic_cast<detail::tuple_view_get<element<I>, I>*>(m_Ptr.get())->_get();
+            }
+
+            // ------------------------------------------------
+
+        private:
+            std::shared_ptr<detail::tuple_view_impl<_pack>> m_Ptr{};
+
+            // ------------------------------------------------
+
+        };
 
         // ------------------------------------------------
 

@@ -1105,8 +1105,8 @@ static_assert((duple | last_unique).get<1>() == 3);
 static_assert(std::same_as<as_pack_t<decltype(duple | nth_unique<1>)>, pack<int>>);
 static_assert((duple | nth_unique<1>).get<0>() == 3);
 
-static_assert(std::same_as<as_pack_t<decltype(duple | remove<int>)>, pack<double>>);
-static_assert((duple | remove<int>).get<0>() == 2.0);
+static_assert(std::same_as<as_pack_t<decltype(duple | views::remove<int>)>, pack<double>>);
+static_assert((duple | views::remove<int>).get<0>() == 2.0);
 
 static_assert(std::same_as<as_pack_t<decltype(duple | remove_all<pack<int, double>>)>, pack<>>);
 static_assert(std::same_as<as_pack_t<decltype(duple | remove_all<pack<int>>)>, pack<double>>);
