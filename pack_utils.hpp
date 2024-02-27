@@ -2389,14 +2389,14 @@ namespace kaixo {
 
             template<class Ty, std::size_t, class = void>
             struct tuple_view_get { // Interface for element in tuple_view
-                constexpr virtual Ty& _get() const = 0;
+                constexpr virtual const Ty& _get() const = 0;
             };
 
             template<class Ty, std::size_t I, tuple_like Tpl>
             struct tuple_view_get<Ty, I, Tpl> : virtual tuple_view_get<Ty, I>, // Base class for element I
                                                 virtual tuple_view_tuple<Tpl>  // interface for getting tuple
             {   // Implementation for element I in Tpl, uses virtual inheritance
-                constexpr Ty& _get() const override { return std::get<I>(this->_tuple()); }
+                constexpr const Ty& _get() const override { return std::get<I>(this->_tuple()); }
             };
 
             // ------------------------------------------------
@@ -2427,11 +2427,11 @@ namespace kaixo {
             };
 
             // ------------------------------------------------
-
+            
         }
 
         // ------------------------------------------------
-
+        
         template<class ...Tys>
         struct tuple_view : view_interface<tuple_view<Tys...>> {
 
@@ -2441,6 +2441,12 @@ namespace kaixo {
 
             // ------------------------------------------------
 
+            template<std::size_t>
+            constexpr static bool is_const = true;
+            
+            template<std::size_t>
+            constexpr static bool is_reference = true;
+
             constexpr static std::size_t size = sizeof...(Tys);
 
             template<std::size_t I>
@@ -2448,8 +2454,21 @@ namespace kaixo {
 
             // ------------------------------------------------
 
+            template<view Tpl, class Indices>
+            struct _compatible {
+                constexpr static bool value = false;
+            };
+
+            template<view Tpl, std::size_t ...Is>
+                requires (Tpl::size == sizeof...(Is))
+            struct _compatible<Tpl, std::index_sequence<Is...>> {
+                constexpr static bool value = (std::same_as<const std::remove_reference_t<get_type_t<Tpl, Is>>, const element<Is>> && ...);
+            };
+
+            // ------------------------------------------------
+
             template<tuple_like Tpl>
-                requires std::same_as<_pack, typename as_pack<views::all_t<Tpl>>::type>
+                requires (_compatible<views::all_t<Tpl>, std::index_sequence_for<Tys...>>::value)
             constexpr tuple_view(Tpl&& tuple)
                 : m_Ptr(std::make_shared<detail::tuple_view_impl<_pack, Tpl>>(std::forward<Tpl>(tuple)))
             {}
@@ -2457,7 +2476,7 @@ namespace kaixo {
             // ------------------------------------------------
 
             template<std::size_t I>
-            constexpr pack_element<I, _pack>::type& get() const {
+            constexpr const element<I>& get() const {
                 return dynamic_cast<detail::tuple_view_get<element<I>, I>*>(m_Ptr.get())->_get();
             }
 
