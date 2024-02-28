@@ -2473,6 +2473,12 @@ namespace kaixo {
                 : m_Ptr(std::make_shared<detail::tuple_view_impl<_pack, Tpl>>(std::forward<Tpl>(tuple)))
             {}
 
+            template<class ...Args>
+                requires (_compatible<views::all_t<std::tuple<Args...>>, std::index_sequence_for<Tys...>>::value)
+            constexpr tuple_view(Args&& ...args)
+                : tuple_view(std::forward_as_tuple(std::forward<Args>(args)...))
+            {}
+
             // ------------------------------------------------
 
             template<std::size_t I>
